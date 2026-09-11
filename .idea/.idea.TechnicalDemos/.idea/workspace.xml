@@ -3,11 +3,20 @@
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
+  <component name="CMakeProjectFlavorService">
+    <option name="flavorId" value="CMakePlainProjectFlavor" />
+  </component>
+  <component name="CMakeSettings">
+    <configurations />
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="20adcf1f-6574-4eb2-922d-2d3387cd2cff" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/SampleScene.unity" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/SampleScene.unity.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.TechnicalDemos/.idea/projectSettingsUpdater.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.TechnicalDemos/.idea/projectSettingsUpdater.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.TechnicalDemos/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.TechnicalDemos/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scene/DemoLvl.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scene/DemoLvl.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/Chunk.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/Chunk.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/World.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/World.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/URPProjectSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/URPProjectSettings.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,6 +33,72 @@
   </component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/Assets/Game/Scripts/Chunks/Chunk.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://D:/ContractedWork/TechnicalDemos/Assets/Game/Scene/DemoLvl.unity" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://D:/ContractedWork/TechnicalDemos/Assets/Game/Scripts/Chunks/Chunk.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://D:/ContractedWork/TechnicalDemos/Assets/Game/Scripts/Chunks/World.cs" root0="SKIP_HIGHLIGHTING" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.0" />
+      <entry key="MS500" value="1.0" />
+      <entry key="S2" value="1.0000000327484075" />
+      <entry key="S5" value="1.00101408900759" />
+      <entry key="S10" value="1.031844764209994" />
+      <entry key="S30" value="1.31696600168133" />
+      <entry key="S60" value="1.5630391332977023" />
+      <entry key="M2" value="1.75735293772476" />
+      <entry key="M5" value="2.0800930188756395" />
+      <entry key="M10" value="3.122147603642519" />
+      <entry key="M15" value="6.333313745407914" />
+      <entry key="M30" value="30.523021333298352" />
+      <entry key="H1" value="110.11297210703188" />
+      <entry key="H2" value="252.63071779519154" />
+      <entry key="H4" value="402.1929489468416" />
+      <entry key="D1" value="606.5141070773622" />
+      <entry key="W1" value="652.0497213360882" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="2.3378716063173342E-39" />
+      <entry key="MS500" value="1.878296422563034E-8" />
+      <entry key="S2" value="0.011745666509513449" />
+      <entry key="S5" value="0.18704897440019458" />
+      <entry key="S10" value="0.5873343471453776" />
+      <entry key="S30" value="1.816940444771847" />
+      <entry key="S60" value="2.6922647862629305" />
+      <entry key="M2" value="3.709745453917052" />
+      <entry key="M5" value="5.848628533429729" />
+      <entry key="M10" value="8.413270149070673" />
+      <entry key="M15" value="11.211174921153049" />
+      <entry key="M30" value="22.67616701406283" />
+      <entry key="H1" value="45.66283720656806" />
+      <entry key="H2" value="74.09505407628674" />
+      <entry key="H4" value="98.22995482496428" />
+      <entry key="D1" value="126.9836752165546" />
+      <entry key="W1" value="132.96776809899174" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="3.0837925309396354E-18" />
+      <entry key="MS500" value="3.1464320793634997E-4" />
+      <entry key="S2" value="0.13876649189036272" />
+      <entry key="S5" value="0.5832918603617845" />
+      <entry key="S10" value="1.1893349145046452" />
+      <entry key="S30" value="2.8895372522866394" />
+      <entry key="S60" value="4.099747373663563" />
+      <entry key="M2" value="5.370980985536438" />
+      <entry key="M5" value="7.876142834843239" />
+      <entry key="M10" value="11.49921155922361" />
+      <entry key="M15" value="17.51002363155626" />
+      <entry key="M30" value="53.158016971254774" />
+      <entry key="H1" value="155.73157156486675" />
+      <entry key="H2" value="326.6893747294776" />
+      <entry key="H4" value="500.3987217362576" />
+      <entry key="D1" value="733.4925725616137" />
+      <entry key="W1" value="785.0167102442156" />
+    </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 0
@@ -35,21 +110,23 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "RunOnceActivity.MCP Project settings loaded": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "cidr.known.project.marker": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
     "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "configurable.group.editor",
     "vue.rearranger.settings.migration": "true"
-  },
-  "keyToStringList": {
-    "rider.external.source.directories": [
-      "C:\\Users\\brand\\AppData\\Roaming\\JetBrains\\Rider2024.1\\resharper-host\\DecompilerCache",
-      "C:\\Users\\brand\\AppData\\Roaming\\JetBrains\\Rider2024.1\\resharper-host\\SourcesCache",
-      "C:\\Users\\brand\\AppData\\Local\\Symbols\\src"
-    ]
   }
 }]]></component>
   <component name="RunManager" selected="Attach to Unity Editor.Attach to Unity Editor">
@@ -58,7 +135,9 @@
       <option name="PROGRAM_PARAMETERS" value="-projectPath D:\ContractedWork\TechnicalDemos -debugCodeOptimization" />
       <option name="WORKING_DIRECTORY" value="D:\ContractedWork\TechnicalDemos" />
       <option name="PASS_PARENT_ENVS" value="1" />
-      <option name="USE_EXTERNAL_CONSOLE" value="0" />
+      <option name="ENV_FILE_PATHS" value="" />
+      <option name="REDIRECT_INPUT_PATH" value="" />
+      <option name="MIXED_MODE_DEBUG" value="0" />
       <method v="2" />
     </configuration>
     <configuration name="Unit Tests (batch mode)" type="RunUnityExe" factoryName="Unity Executable">
@@ -66,27 +145,38 @@
       <option name="PROGRAM_PARAMETERS" value="-runTests -batchmode -projectPath D:\ContractedWork\TechnicalDemos -testResults Logs/results.xml -testPlatform EditMode -debugCodeOptimization" />
       <option name="WORKING_DIRECTORY" value="D:\ContractedWork\TechnicalDemos" />
       <option name="PASS_PARENT_ENVS" value="1" />
-      <option name="USE_EXTERNAL_CONSOLE" value="0" />
+      <option name="ENV_FILE_PATHS" value="" />
+      <option name="REDIRECT_INPUT_PATH" value="" />
+      <option name="MIXED_MODE_DEBUG" value="0" />
       <method v="2" />
     </configuration>
-    <configuration name="Attach to Unity Editor &amp; Play" type="UNITY_DEBUG_RUN_CONFIGURATION" factoryName="UNITY_ATTACH_AND_PLAY" show_console_on_std_err="false" show_console_on_std_out="false" port="50000" address="localhost">
+    <configuration name="Attach to Unity Editor &amp; Play" type="UNITY_DEBUG_RUN_CONFIGURATION" factoryName="UNITY_ATTACH_AND_PLAY" show_console_on_std_err="false" show_console_on_std_out="false" port="50000" address="localhost" useMixedMode="false">
       <option name="allowRunningInParallel" value="false" />
       <option name="listenPortForConnections" value="false" />
       <option name="pid" />
       <option name="projectPathOnTarget" />
+      <option name="runtimes">
+        <list />
+      </option>
       <option name="selectedOptions">
         <list />
       </option>
       <method v="2" />
     </configuration>
-    <configuration name="Attach to Unity Editor" type="UNITY_DEBUG_RUN_CONFIGURATION" factoryName="Unity Debug" show_console_on_std_err="false" show_console_on_std_out="false" port="50000" address="localhost">
+    <configuration name="Attach to Unity Editor" type="UNITY_DEBUG_RUN_CONFIGURATION" factoryName="Unity Debug" show_console_on_std_err="false" show_console_on_std_out="false" port="50000" address="localhost" useMixedMode="false">
       <option name="allowRunningInParallel" value="false" />
       <option name="listenPortForConnections" value="false" />
       <option name="pid" />
       <option name="projectPathOnTarget" />
+      <option name="runtimes">
+        <list />
+      </option>
       <option name="selectedOptions">
         <list />
       </option>
+      <method v="2" />
+    </configuration>
+    <configuration name="Attach to" type="UnityDevicePlayer" factoryName="UnityAttachToDevicePlayer">
       <method v="2" />
     </configuration>
   </component>
@@ -99,7 +189,7 @@
       <option name="presentableId" value="Default" />
       <updated>1788992008835</updated>
       <workItem from="1788992010971" duration="280000" />
-      <workItem from="1788992299965" duration="3370000" />
+      <workItem from="1788992299965" duration="4966000" />
     </task>
     <servers />
   </component>
@@ -115,6 +205,24 @@
   <component name="UnityUnitTestConfiguration" currentTestLauncher="Both" />
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.OperationCanceledException" breakIfHandledByOtherCode="false" displayValue="System.OperationCanceledException" />
+          <option name="timeStamp" value="1" />
+        </breakpoint>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.Threading.Tasks.TaskCanceledException" breakIfHandledByOtherCode="false" displayValue="System.Threading.Tasks.TaskCanceledException" />
+          <option name="timeStamp" value="2" />
+        </breakpoint>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.Threading.ThreadAbortException" breakIfHandledByOtherCode="false" displayValue="System.Threading.ThreadAbortException" />
+          <option name="timeStamp" value="3" />
+        </breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
