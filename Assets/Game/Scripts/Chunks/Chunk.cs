@@ -151,7 +151,13 @@ public class Chunk : MonoBehaviour
                 }
             });
 
-            if (this == null || gameObject == null || !gameObject.activeInHierarchy) return;
+            // THE FIX: Unlock the chunk before aborting so it can safely load later!
+            if (this == null || gameObject == null || !gameObject.activeInHierarchy) 
+            {
+                _isGenerating = false;
+                _needsRegeneration = false;
+                return;
+            }
 
             // 2. COME BACK TO MAIN THREAD TO UPDATE UNITY COMPONENTS
             _mesh.Clear(); 

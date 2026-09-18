@@ -155,6 +155,7 @@ MonoBehaviour:
   voxelSize: 0.25
   playerTarget: {fileID: 1760292260}
   viewDistanceInChunks: 6
+  sleepDistanceInChunks: 12
   maxYChunk: 0
 --- !u!4 &5491321
 Transform:

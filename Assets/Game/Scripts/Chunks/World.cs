@@ -17,13 +17,19 @@ public class World : MonoBehaviour
     [Header("Infinite Loading")]
     public Transform playerTarget;
     public int viewDistanceInChunks = 3;
+    
+    // NEW: How far away a chunk can be before we permanently delete its mesh
+    public int sleepDistanceInChunks = 6; 
     public int maxYChunk = 0; 
 
     private Dictionary<Vector3Int, Chunk> _activeChunks = new Dictionary<Vector3Int, Chunk>();
+    
+    // NEW: The cache that holds invisible chunks with fully intact meshes
+    private Dictionary<Vector3Int, Chunk> _sleepingChunks = new Dictionary<Vector3Int, Chunk>();
+    
     private Queue<Chunk> _chunkPool = new Queue<Chunk>();
     private Queue<Vector3Int> _chunksToGenerate = new Queue<Vector3Int>();
 
-    // NEW: This dictionary remembers the layout of chunks you've modified or visited
     private Dictionary<Vector3Int, float[,,]> _savedChunkData = new Dictionary<Vector3Int, float[,,]>();
 
     private void Awake()
@@ -45,8 +51,27 @@ public class World : MonoBehaviour
         {
             if (_chunksToGenerate.Count > 0)
             {
-                Vector3Int coord = _chunksToGenerate.Dequeue();
-                if (!_activeChunks.ContainsKey(coord)) GenerateChunkAt(coord);
+                int chunksProcessedThisFrame = 0;
+                
+                // Get the player's current location so we can check distances
+                Vector3Int currentChunk = GetChunkCoordFromPosition(playerTarget.position);
+
+                while (_chunksToGenerate.Count > 0 && chunksProcessedThisFrame < 4)
+                {
+                    Vector3Int coord = _chunksToGenerate.Dequeue();
+                    
+                    // THE FIX: If we ran really fast and this chunk is now miles behind us, skip it!
+                    if (Vector3Int.Distance(coord, currentChunk) > viewDistanceInChunks + 1)
+                    {
+                        continue; 
+                    }
+
+                    if (!_activeChunks.ContainsKey(coord) && !_sleepingChunks.ContainsKey(coord)) 
+                    {
+                        GenerateChunkAt(coord);
+                    }
+                    chunksProcessedThisFrame++;
+                }
                 yield return null; 
             }
             else
@@ -60,22 +85,48 @@ public class World : MonoBehaviour
     private void UpdateVisibleChunks()
     {
         Vector3Int currentChunk = GetChunkCoordFromPosition(playerTarget.position);
-        List<Vector3Int> chunksToRemove = new List<Vector3Int>();
-
+        
+        // 1. Check Active Chunks to see if they should go to Sleep
+        List<Vector3Int> activeToRemove = new List<Vector3Int>();
         foreach (var chunk in _activeChunks)
         {
-            if (Vector3Int.Distance(chunk.Key, currentChunk) > viewDistanceInChunks + 1)
+            float dist = Vector3Int.Distance(chunk.Key, currentChunk);
+            if (dist > viewDistanceInChunks + 1)
             {
-                // NEW: Save the chunk's density data into our dictionary before unloading it!
-                _savedChunkData[chunk.Key] = chunk.Value.GetDensities();
+                chunk.Value.gameObject.SetActive(false); // Turn invisible
+                activeToRemove.Add(chunk.Key);
 
-                chunk.Value.gameObject.SetActive(false);
-                _chunkPool.Enqueue(chunk.Value);
-                chunksToRemove.Add(chunk.Key);
+                if (dist > sleepDistanceInChunks + 1)
+                {
+                    // It's way too far away. Save it and fully recycle it.
+                    _savedChunkData[chunk.Key] = chunk.Value.GetDensities();
+                    _chunkPool.Enqueue(chunk.Value);
+                }
+                else
+                {
+                    // It's just out of view. Put it to sleep (keep mesh instantly ready).
+                    _sleepingChunks.Add(chunk.Key, chunk.Value);
+                }
             }
         }
-        foreach (var key in chunksToRemove) _activeChunks.Remove(key);
+        foreach (var key in activeToRemove) _activeChunks.Remove(key);
 
+        // 2. Check Sleeping Chunks to see if they should be Recycled
+        List<Vector3Int> sleepingToRemove = new List<Vector3Int>();
+        foreach (var chunk in _sleepingChunks)
+        {
+            float dist = Vector3Int.Distance(chunk.Key, currentChunk);
+            if (dist > sleepDistanceInChunks + 1)
+            {
+                // It drifted too far while sleeping. Recycle it.
+                _savedChunkData[chunk.Key] = chunk.Value.GetDensities();
+                _chunkPool.Enqueue(chunk.Value);
+                sleepingToRemove.Add(chunk.Key);
+            }
+        }
+        foreach (var key in sleepingToRemove) _sleepingChunks.Remove(key);
+
+        // 3. Load or Wake Up chunks around the player
         for (int x = -viewDistanceInChunks; x <= viewDistanceInChunks; x++)
         {
             for (int y = -viewDistanceInChunks; y <= viewDistanceInChunks; y++) 
@@ -85,8 +136,18 @@ public class World : MonoBehaviour
                     Vector3Int coord = new Vector3Int(currentChunk.x + x, currentChunk.y + y, currentChunk.z + z);
                     if (coord.y > maxYChunk) continue;
 
-                    if (!_activeChunks.ContainsKey(coord) && !_chunksToGenerate.Contains(coord))
+                    if (_activeChunks.ContainsKey(coord)) continue;
+
+                    // THE MAGIC: If it is sleeping, wake it up INSTANTLY without generating!
+                    if (_sleepingChunks.TryGetValue(coord, out Chunk sleepingChunk))
                     {
+                        sleepingChunk.gameObject.SetActive(true);
+                        _activeChunks.Add(coord, sleepingChunk);
+                        _sleepingChunks.Remove(coord);
+                    }
+                    else if (!_chunksToGenerate.Contains(coord))
+                    {
+                        // It doesn't exist anywhere, add it to the math queue
                         _chunksToGenerate.Enqueue(coord);
                     }
                 }
@@ -115,10 +176,7 @@ public class World : MonoBehaviour
 
         newChunk.gameObject.name = $"Chunk_{coord.x}_{coord.y}_{coord.z}";
 
-        // NEW: Check if we have saved data for this chunk
         _savedChunkData.TryGetValue(coord, out float[,,] dataToLoad);
-
-        // Pass the saved data into the Init function
         newChunk.Init(chunkSize, voxelSize, chunkPos, noiseScale, seed, dataToLoad);
         
         _activeChunks.Add(coord, newChunk);
@@ -133,7 +191,7 @@ public class World : MonoBehaviour
         );
     }
 
-   public void ModifyTerrain(Vector3 hitPoint, float radius, float amount)
+    public void ModifyTerrain(Vector3 hitPoint, float radius, float amount)
     {
         Vector3Int minChunk = GetChunkCoordFromPosition(hitPoint - new Vector3(radius, radius, radius));
         Vector3Int maxChunk = GetChunkCoordFromPosition(hitPoint + new Vector3(radius, radius, radius));
@@ -148,12 +206,18 @@ public class World : MonoBehaviour
                     
                     if (_activeChunks.TryGetValue(coord, out Chunk chunk))
                     {
-                        // The chunk is loaded! Update it normally.
                         chunk.EditTerrain(hitPoint, radius, amount);
+                    }
+                    // NEW: If you mine a sleeping chunk, instantly wake it up!
+                    else if (_sleepingChunks.TryGetValue(coord, out Chunk sleepingChunk))
+                    {
+                        sleepingChunk.gameObject.SetActive(true);
+                        _activeChunks.Add(coord, sleepingChunk);
+                        _sleepingChunks.Remove(coord);
+                        sleepingChunk.EditTerrain(hitPoint, radius, amount);
                     }
                     else
                     {
-                        // THE FIX: The chunk is unloaded! Save the damage to its memory so it loads correctly later.
                         EditUnloadedChunk(coord, hitPoint, radius, amount);
                     }
                 }
@@ -161,10 +225,8 @@ public class World : MonoBehaviour
         }
     }
 
-    // NEW HELPER METHOD: Modifies chunk data even when the chunk is invisible/unloaded
     private void EditUnloadedChunk(Vector3Int coord, Vector3 hitPoint, float radius, float amount)
     {
-        // 1. If this unloaded chunk doesn't have saved memory yet, we must generate its default rock first!
         if (!_savedChunkData.TryGetValue(coord, out float[,,] densities))
         {
             densities = new float[chunkSize.x + 1, chunkSize.y + 1, chunkSize.z + 1];
@@ -179,7 +241,6 @@ public class World : MonoBehaviour
                         Vector3 worldPos = chunkGlobalPos + (new Vector3(x, y, z) * voxelSize);
                         float density = -1f; 
 
-                        // This must match your Chunk.cs starting hallway logic!
                         if (worldPos.x > -4f && worldPos.x < 4f &&
                             worldPos.y > -2f && worldPos.y < 5f &&
                             worldPos.z > -5f && worldPos.z < 15f)
@@ -191,11 +252,9 @@ public class World : MonoBehaviour
                     }
                 }
             }
-            // Save the newly generated default rock to memory
             _savedChunkData[coord] = densities; 
         }
 
-        // 2. Now carve the spherical hole into this saved memory
         Vector3 chunkPos = new Vector3(coord.x * chunkSize.x, coord.y * chunkSize.y, coord.z * chunkSize.z) * voxelSize;
         Vector3 localHit = hitPoint - chunkPos;
 
