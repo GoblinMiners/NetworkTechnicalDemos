@@ -1,74 +1,51 @@
+using Mirror;
 using UnityEngine;
 
-public class PlayerMiner : MonoBehaviour
+public class PlayerMiner : NetworkBehaviour
 {
-    [Header("Movement Settings")]
-    public float moveSpeed = 10f;
-    public float lookSpeed = 2f;
-    
-    private float _pitch = 0f;
-    private float _yaw = 0f;
-
-    [Header("Mining Settings")]
+    public float mineRadius = 2.5f;
+    public float minePower = 15f;
     public float reach = 10f;
-    public float mineRadius = 2f;
     
-    // Set to 5f so it instantly carves solid rock (which is set to 1f) to 0f
-    public float minePower = 5f; 
+    public Transform cameraPivot;
+    private PlayerControls _controls;
+    private bool _isMining = false;
 
-    void Start()
+    public override void OnStartLocalPlayer()
     {
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        _controls = new PlayerControls();
         
-        Vector3 angles = transform.eulerAngles;
-        _pitch = angles.x;
-        _yaw = angles.y;
+        // Set mining state based on the button press phase
+        _controls.Player.Mine.performed += ctx => _isMining = true;
+        _controls.Player.Mine.canceled += ctx => _isMining = false;
+        
+        _controls.Enable();
     }
 
-    void Update()
+    public override void OnStopLocalPlayer()
     {
-        HandleCameraLook();
-        HandleMovement();
+        if (_controls != null) _controls.Disable();
+    }
 
-        if (Input.GetMouseButton(0)) MineRock();
-        
-        if (Input.GetKeyDown(KeyCode.Escape))
+    private void Update()
+    {
+        // Ensure only the local player can fire their own laser
+        if (!isLocalPlayer) return;
+
+        if (_isMining)
         {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            MineRock();
         }
-    }
-
-    private void HandleCameraLook()
-    {
-        _yaw += Input.GetAxis("Mouse X") * lookSpeed;
-        _pitch -= Input.GetAxis("Mouse Y") * lookSpeed;
-        _pitch = Mathf.Clamp(_pitch, -90f, 90f); 
-        transform.eulerAngles = new Vector3(_pitch, _yaw, 0f);
-    }
-
-    private void HandleMovement()
-    {
-        float x = Input.GetAxis("Horizontal");
-        float z = Input.GetAxis("Vertical");
-        float y = 0f;
-
-        if (Input.GetKey(KeyCode.Space)) y = 1f;
-        if (Input.GetKey(KeyCode.LeftShift)) y = -1f;
-
-        Vector3 move = transform.right * x + transform.up * y + transform.forward * z;
-        transform.position += move * (moveSpeed * Time.deltaTime);
     }
 
     private void MineRock()
     {
-        Ray ray = new Ray(transform.position, transform.forward);
+        // Fire the laser from the camera pivot so it shoots exactly where you look (up/down)
+        Ray ray = new Ray(cameraPivot.position, cameraPivot.forward); 
         
         if (Physics.Raycast(ray, out RaycastHit hit, reach))
         {
-            // By multiplying power by Time.deltaTime, it melts smoothly instead of flashing
-            World.Instance.ModifyTerrain(hit.point, mineRadius, minePower * Time.deltaTime);
+            World.Instance.RequestModifyTerrain(hit.point, mineRadius, minePower * Time.deltaTime);
         }
     }
 }

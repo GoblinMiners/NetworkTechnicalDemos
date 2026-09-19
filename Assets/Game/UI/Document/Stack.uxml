@@ -1,0 +1,43 @@
+
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns:ui="UnityEngine.UIElements"
+         xmlns:uie="UnityEditor.UIElements"
+         noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd"
+         editor-extension-mode="false">
+
+    <ui:VisualElement
+        name="MainMenuContainer"
+        picking-mode="Ignore"
+        style="flex-grow: 1; position: absolute; width: 100%; height: 100%; background-color: rgb(33, 142, 55); opacity: 1;">
+
+        <ui:Label
+            text="Goblin Miners Tech Demo"
+            style="top: 40%; width: 420px; left: 37%; right: auto; -unity-text-align: middle-center; background-color: rgb(140, 140, 140); -unity-background-image-tint-color: rgb(0, 0, 0); color: rgb(0, 0, 0); opacity: 1; font-size: 32px; position: absolute; height: 60px;" />
+
+        <ui:Button
+            text="Host Game"
+            name="HostButton"
+            style="top: 50%; width: 15%; height: 5%; left: 40%; font-size: 32px; position: absolute;" />
+
+    </ui:VisualElement>
+
+    <ui:VisualElement
+        name="LobbyContainer"
+        picking-mode="Ignore"
+        style="flex-grow: 1; position: absolute; width: 100%; height: 100%; display: none; background-color: rgb(19, 76, 103);">
+
+        <ui:IntegerField
+            label="Seed Input"
+            value="0"
+            max-length="9999"
+            name="SeedInput"
+            style="top: 15%; width: 70%; left: 2%; background-color: rgb(154, 154, 154);" />
+
+        <ui:Button
+            text="Start"
+            name="StartGameButton"
+            style="top: 28%; width: 30%; height: 5%; left: 60%;" />
+
+    </ui:VisualElement>
+
+</ui:UXML>

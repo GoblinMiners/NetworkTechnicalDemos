@@ -1,13 +1,22 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Mirror;
 
-public class World : MonoBehaviour
+[RequireComponent(typeof(NetworkIdentity))]
+public class World : NetworkBehaviour
 {
     public static World Instance { get; private set; }
 
     [Header("World Settings")]
+    [Tooltip("Leave at 0 for a random seed, or set a specific seed for the host.")]
+    [SerializeField]
+    public int customSeed = 0;
+
+    // Synchronized across all clients automatically by Mirror
+    [SyncVar(hook = nameof(OnSeedSynced))]
     public int seed;
+
     public float noiseScale = 0.05f;
     [SerializeField] private Material voxelMaterial;
     
@@ -17,33 +26,70 @@ public class World : MonoBehaviour
     [Header("Infinite Loading")]
     public Transform playerTarget;
     public int viewDistanceInChunks = 3;
-    
-    // NEW: How far away a chunk can be before we permanently delete its mesh
     public int sleepDistanceInChunks = 6; 
     public int maxYChunk = 0; 
 
     private Dictionary<Vector3Int, Chunk> _activeChunks = new Dictionary<Vector3Int, Chunk>();
-    
-    // NEW: The cache that holds invisible chunks with fully intact meshes
     private Dictionary<Vector3Int, Chunk> _sleepingChunks = new Dictionary<Vector3Int, Chunk>();
-    
     private Queue<Chunk> _chunkPool = new Queue<Chunk>();
     private Queue<Vector3Int> _chunksToGenerate = new Queue<Vector3Int>();
-
     private Dictionary<Vector3Int, float[,,]> _savedChunkData = new Dictionary<Vector3Int, float[,,]>();
+
+    private Coroutine _chunkManagerCoroutine;
+    private bool _worldInitialized = false;
 
     private void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
-
-        if (seed == 0) seed = Random.Range(1000, 9999);
     }
 
-    private void Start()
+    #region Mirror Initialization & Seed Sync
+
+    public override void OnStartServer()
     {
-        StartCoroutine(ChunkManagerRoutine());
+        base.OnStartServer();
+
+        // If the host left customSeed at 0, pick a random seed; otherwise use the specified one
+        if (customSeed == 0)
+        {
+            seed = Random.Range(1000, 99999);
+        }
+        else
+        {
+            seed = customSeed;
+        }
     }
+
+    // Called automatically whenever the SyncVar 'seed' changes on clients or host
+    private void OnSeedSynced(int oldSeed, int newSeed)
+    {
+        StartWorldGeneration();
+    }
+
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+
+        // Fallback in case the seed synced prior to full client startup
+        if (seed != 0 && !_worldInitialized)
+        {
+            StartWorldGeneration();
+        }
+    }
+
+    private void StartWorldGeneration()
+    {
+        if (_worldInitialized) return;
+        _worldInitialized = true;
+
+        if (_chunkManagerCoroutine != null) StopCoroutine(_chunkManagerCoroutine);
+        _chunkManagerCoroutine = StartCoroutine(ChunkManagerRoutine());
+    }
+
+    #endregion
+
+    #region Chunk Management Loop
 
     private IEnumerator ChunkManagerRoutine()
     {
@@ -52,16 +98,15 @@ public class World : MonoBehaviour
             if (_chunksToGenerate.Count > 0)
             {
                 int chunksProcessedThisFrame = 0;
-                
-                // Get the player's current location so we can check distances
-                Vector3Int currentChunk = GetChunkCoordFromPosition(playerTarget.position);
+                Vector3Int currentChunk = playerTarget != null 
+                    ? GetChunkCoordFromPosition(playerTarget.position) 
+                    : Vector3Int.zero;
 
                 while (_chunksToGenerate.Count > 0 && chunksProcessedThisFrame < 4)
                 {
                     Vector3Int coord = _chunksToGenerate.Dequeue();
                     
-                    // THE FIX: If we ran really fast and this chunk is now miles behind us, skip it!
-                    if (Vector3Int.Distance(coord, currentChunk) > viewDistanceInChunks + 1)
+                    if (playerTarget != null && Vector3Int.Distance(coord, currentChunk) > viewDistanceInChunks + 1)
                     {
                         continue; 
                     }
@@ -86,39 +131,34 @@ public class World : MonoBehaviour
     {
         Vector3Int currentChunk = GetChunkCoordFromPosition(playerTarget.position);
         
-        // 1. Check Active Chunks to see if they should go to Sleep
         List<Vector3Int> activeToRemove = new List<Vector3Int>();
         foreach (var chunk in _activeChunks)
         {
             float dist = Vector3Int.Distance(chunk.Key, currentChunk);
             if (dist > viewDistanceInChunks + 1)
             {
-                chunk.Value.gameObject.SetActive(false); // Turn invisible
+                chunk.Value.gameObject.SetActive(false);
                 activeToRemove.Add(chunk.Key);
 
                 if (dist > sleepDistanceInChunks + 1)
                 {
-                    // It's way too far away. Save it and fully recycle it.
                     _savedChunkData[chunk.Key] = chunk.Value.GetDensities();
                     _chunkPool.Enqueue(chunk.Value);
                 }
                 else
                 {
-                    // It's just out of view. Put it to sleep (keep mesh instantly ready).
                     _sleepingChunks.Add(chunk.Key, chunk.Value);
                 }
             }
         }
         foreach (var key in activeToRemove) _activeChunks.Remove(key);
 
-        // 2. Check Sleeping Chunks to see if they should be Recycled
         List<Vector3Int> sleepingToRemove = new List<Vector3Int>();
         foreach (var chunk in _sleepingChunks)
         {
             float dist = Vector3Int.Distance(chunk.Key, currentChunk);
             if (dist > sleepDistanceInChunks + 1)
             {
-                // It drifted too far while sleeping. Recycle it.
                 _savedChunkData[chunk.Key] = chunk.Value.GetDensities();
                 _chunkPool.Enqueue(chunk.Value);
                 sleepingToRemove.Add(chunk.Key);
@@ -126,7 +166,6 @@ public class World : MonoBehaviour
         }
         foreach (var key in sleepingToRemove) _sleepingChunks.Remove(key);
 
-        // 3. Load or Wake Up chunks around the player
         for (int x = -viewDistanceInChunks; x <= viewDistanceInChunks; x++)
         {
             for (int y = -viewDistanceInChunks; y <= viewDistanceInChunks; y++) 
@@ -138,7 +177,6 @@ public class World : MonoBehaviour
 
                     if (_activeChunks.ContainsKey(coord)) continue;
 
-                    // THE MAGIC: If it is sleeping, wake it up INSTANTLY without generating!
                     if (_sleepingChunks.TryGetValue(coord, out Chunk sleepingChunk))
                     {
                         sleepingChunk.gameObject.SetActive(true);
@@ -147,7 +185,6 @@ public class World : MonoBehaviour
                     }
                     else if (!_chunksToGenerate.Contains(coord))
                     {
-                        // It doesn't exist anywhere, add it to the math queue
                         _chunksToGenerate.Enqueue(coord);
                     }
                 }
@@ -182,16 +219,38 @@ public class World : MonoBehaviour
         _activeChunks.Add(coord, newChunk);
     }
 
-    public Vector3Int GetChunkCoordFromPosition(Vector3 pos)
+    #endregion
+
+    #region Networked Mining
+
+    // Called locally by a player's miner script
+    public void RequestModifyTerrain(Vector3 hitPoint, float radius, float amount)
     {
-        return new Vector3Int(
-            Mathf.FloorToInt(pos.x / (chunkSize.x * voxelSize)),
-            Mathf.FloorToInt(pos.y / (chunkSize.y * voxelSize)),
-            Mathf.FloorToInt(pos.z / (chunkSize.z * voxelSize))
-        );
+        if (isServer)
+        {
+            RpcModifyTerrain(hitPoint, radius, amount);
+        }
+        else
+        {
+            CmdRequestModifyTerrain(hitPoint, radius, amount);
+        }
     }
 
-    public void ModifyTerrain(Vector3 hitPoint, float radius, float amount)
+    // Client informs the server of a modification
+    [Command(requiresAuthority = false)]
+    private void CmdRequestModifyTerrain(Vector3 hitPoint, float radius, float amount)
+    {
+        RpcModifyTerrain(hitPoint, radius, amount);
+    }
+
+    // Server broadcasts the modification to all connected clients
+    [ClientRpc]
+    private void RpcModifyTerrain(Vector3 hitPoint, float radius, float amount)
+    {
+        ExecuteTerrainModification(hitPoint, radius, amount);
+    }
+
+    private void ExecuteTerrainModification(Vector3 hitPoint, float radius, float amount)
     {
         Vector3Int minChunk = GetChunkCoordFromPosition(hitPoint - new Vector3(radius, radius, radius));
         Vector3Int maxChunk = GetChunkCoordFromPosition(hitPoint + new Vector3(radius, radius, radius));
@@ -208,7 +267,6 @@ public class World : MonoBehaviour
                     {
                         chunk.EditTerrain(hitPoint, radius, amount);
                     }
-                    // NEW: If you mine a sleeping chunk, instantly wake it up!
                     else if (_sleepingChunks.TryGetValue(coord, out Chunk sleepingChunk))
                     {
                         sleepingChunk.gameObject.SetActive(true);
@@ -219,6 +277,11 @@ public class World : MonoBehaviour
                     else
                     {
                         EditUnloadedChunk(coord, hitPoint, radius, amount);
+                        
+                        if (!_chunksToGenerate.Contains(coord))
+                        {
+                            _chunksToGenerate.Enqueue(coord);
+                        }
                     }
                 }
             }
@@ -282,6 +345,17 @@ public class World : MonoBehaviour
                 }
             }
         }
+    }
+
+    #endregion
+
+    public Vector3Int GetChunkCoordFromPosition(Vector3 pos)
+    {
+        return new Vector3Int(
+            Mathf.FloorToInt(pos.x / (chunkSize.x * voxelSize)),
+            Mathf.FloorToInt(pos.y / (chunkSize.y * voxelSize)),
+            Mathf.FloorToInt(pos.z / (chunkSize.z * voxelSize))
+        );
     }
 
     public Material GetVoxelMaterial() { return voxelMaterial; }
