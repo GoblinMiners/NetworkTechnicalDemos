@@ -847,8 +847,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1616563462}
-  - component: {fileID: 1616563461}
   - component: {fileID: 1616563460}
+  - component: {fileID: 1616563463}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -885,7 +885,22 @@ MonoBehaviour:
   debugLog: 0
   statisticsGUI: 0
   statisticsLog: 0
---- !u!114 &1616563461
+--- !u!4 &1616563462
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1616563459}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 597713115}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1616563463
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -894,9 +909,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1616563459}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8aab4c8111b7c411b9b92cf3dbc5bd4e, type: 3}
+  m_Script: {fileID: 11500000, guid: 615e6c6589cf9e54cad646b5a11e0529, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Mirror::Mirror.NetworkManager
+  m_EditorClassIdentifier: Mirror.Components::Mirror.NetworkRoomManager
   dontDestroyOnLoad: 1
   runInBackground: 1
   headlessStartMode: 0
@@ -905,7 +920,7 @@ MonoBehaviour:
   offlineScene: 
   onlineScene: 
   offlineSceneLoadDelay: 0
-  transport: {fileID: 1616563460}
+  transport: {fileID: 0}
   networkAddress: localhost
   maxConnections: 100
   disconnectInactiveConnections: 0
@@ -930,21 +945,13 @@ MonoBehaviour:
   evaluationMethod: 0
   evaluationInterval: 3
   timeInterpolationGui: 0
---- !u!4 &1616563462
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1616563459}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 597713115}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  showRoomGUI: 1
+  minPlayers: 1
+  roomPlayerPrefab: {fileID: 4766716712978394122, guid: 9fce0fd90bfd651429253b05c45a77eb, type: 3}
+  RoomScene: Assets/Game/Scene/DemoLvl.unity
+  GameplayScene: Assets/Game/Scene/DemoLvl.unity
+  _allPlayersReady: 0
+  clientIndex: 0
 --- !u!1 &1760292257
 GameObject:
   m_ObjectHideFlags: 0

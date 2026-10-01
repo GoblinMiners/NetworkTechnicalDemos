@@ -1,0 +1,62 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="MainMenuContainer" style="flex-grow: 1; position: absolute; width: 100%; height: 100%; top: 0; left: 0; bottom: 0; right: 0; background-color: rgb(19, 28, 41);">
+        <ui:Button text="Play" name="StartButton" style="position: absolute; top: 452px; left: 848px; right: 831px; bottom: 549px; -unity-text-align: middle-center; font-size: 32px;"/>
+        <ui:Label text="Goblin Miners" name="Title" style="position: absolute; top: 184px; left: 563px; right: auto; bottom: auto; color: rgb(248, 244, 244); font-size: 128px;"/>
+    </ui:VisualElement>
+    <ui:VisualElement name="HostJoinContainer" style="flex-grow: 1; position: absolute; width: 100%; height: 100%; top: 0; left: 0; right: 0; bottom: 0; background-color: rgb(59, 70, 84); display: flex;">
+        <ui:GroupBox name="HostGameGroup" style="position: absolute; height: 99%; width: 50%; top: auto; left: 0%; right: 50%; display: flex;">
+            <ui:VisualElement style="flex-grow: 1; -unity-text-outline-color: rgb(241, 239, 239); -unity-text-outline-width: 66px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0); border-top-width: 4px; border-right-width: 4px; border-bottom-width: 4px; border-left-width: 4px;">
+                <ui:Label text="Host Game" name="HostGameText" style="position: absolute; top: 42px; left: 186px; right: 235px; bottom: 900px; font-size: 72px; align-self: auto; -unity-text-align: upper-center; -unity-font-style: bold; color: rgb(24, 147, 154); -unity-text-outline-color: rgb(255, 11, 154); -unity-text-outline-width: 1px;"/>
+                <ui:Button text="Host New Game" name="HostGameButton" style="position: absolute; top: 385px; left: 286px; right: 285px; bottom: 582px; font-size: 38px; background-color: rgb(46, 94, 82); -unity-font-style: bold; -unity-text-outline-color: rgb(250, 30, 118); -unity-text-outline-width: 0.3px;"/>
+                <ui:Button text="Back" name="HostGameBackButton" style="position: absolute; top: 954px; left: 34px; right: 665px; bottom: 38px; font-size: 32px; background-color: rgb(111, 41, 45); -unity-text-outline-width: 0.4px; -unity-text-outline-color: rgb(250, 247, 247); text-shadow: 8.7px 3.8px 4.3px rgb(19, 51, 96); -unity-font-style: bold; letter-spacing: 15px;"/>
+            </ui:VisualElement>
+        </ui:GroupBox>
+        <ui:GroupBox name="JoinGroup" style="position: absolute; top: auto; left: 50%; height: 100%; width: 50%; right: 0%;">
+            <ui:VisualElement style="flex-grow: 1; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0); border-top-width: 4px; border-right-width: 4px; border-bottom-width: 4px; border-left-width: 4px;">
+                <ui:Button text="Join a Lobby" name="JoinGameButton" style="position: absolute; top: 385px; left: 286px; right: 285px; bottom: 582px; font-size: 38px; background-color: rgb(46, 94, 82); -unity-font-style: bold; -unity-text-outline-color: rgb(250, 30, 118); -unity-text-outline-width: 0.3px;"/>
+                <ui:Label text="Join Lobby" name="JoinLobbyText" style="position: absolute; top: 42px; left: 186px; right: 235px; bottom: 900px; font-size: 72px; align-self: auto; -unity-text-align: upper-center; -unity-font-style: bold; color: rgb(24, 147, 154); -unity-text-outline-color: rgb(255, 11, 154); -unity-text-outline-width: 1px;"/>
+            </ui:VisualElement>
+        </ui:GroupBox>
+    </ui:VisualElement>
+    <ui:VisualElement name="StartNewLobbyContainer" style="flex-grow: 1; top: 0; left: 0; bottom: 0; right: 0; position: absolute; width: 100%; height: 100%; background-color: rgb(59, 70, 84); display: flex;">
+        <ui:Label text="Label" name="StartLobby"/>
+        <ui:TextField label="Text Field" placeholder-text="filler text" name="LobbyName"/>
+        <ui:TextField label="Text Field" placeholder-text="filler text" name="LobbyCode"/>
+        <ui:Button text="Button" name="StartLobbyBackButton"/>
+        <ui:Button text="Button" name="CreateLobbyButton"/>
+    </ui:VisualElement>
+    <ui:VisualElement name="JoinLobbyContainer" style="flex-grow: 1; width: 100%; height: 100%; top: 0; left: 0; bottom: 0; right: 0; position: absolute; background-color: rgb(59, 70, 84); display: none;">
+        <ui:Label text="Label" name="JoinLobby"/>
+        <ui:TextField label="Text Field" placeholder-text="filler text" name="EnterCode"/>
+        <ui:Label text="Label" name="ErrorField"/>
+        <ui:Button text="Button" name="JoinLobbyBackButton"/>
+        <ui:Button text="Button" name="JoinLobbyButton"/>
+    </ui:VisualElement>
+    <ui:VisualElement name="WaitingRoomContainer" style="flex-grow: 1; width: 100%; height: 100%; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background-color: rgb(59, 70, 84); display: flex;">
+        <ui:GroupBox name="Players" style="position: absolute; height: 100%; width: 99.5%; top: initial; left: initial; right: initial; bottom: initial;">
+            <ui:VisualElement name="Player1" style="flex-grow: 1; width: 100%; height: 25%; position: absolute;">
+                <ui:Image name="Player1Icon" style="position: absolute; height: 270px; width: 398px;"/>
+                <ui:Label text="Label" name="Player1Name" style="position: absolute; top: 114px; left: 482px;"/>
+                <ui:Toggle label="Ready" name="Player1Ready" style="position: absolute; font-size: 52px; height: 81px; width: 199px; justify-content: flex-start; align-items: stretch; transform-origin: center; top: 105px; left: 1592px;"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="Player2" style="flex-grow: 1; width: 100%; height: 25%; position: absolute; top: 25%; bottom: 75%;">
+                <ui:Image style="position: absolute; height: 270px; width: 398px;"/>
+                <ui:Label text="Label" style="position: absolute; top: 114px; left: 482px;"/>
+                <ui:Toggle label="Ready" style="position: absolute; font-size: 52px; height: 81px; width: 199px; justify-content: flex-start; align-items: stretch; transform-origin: center; top: 105px; left: 1592px;"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="Player3" style="flex-grow: 1; width: 100%; height: 25%; position: absolute; top: 50%; bottom: 50%;">
+                <ui:Image style="position: absolute; height: 270px; width: 398px;"/>
+                <ui:Label text="Label" style="position: absolute; top: 114px; left: 482px;"/>
+                <ui:Toggle label="Ready" style="position: absolute; font-size: 52px; height: 81px; width: 199px; justify-content: flex-start; align-items: stretch; transform-origin: center; top: 105px; left: 1592px;"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="Player4" style="flex-grow: 1; width: 100%; height: 25%; position: absolute; top: 75%; bottom: 0%;">
+                <ui:Image style="position: absolute; height: 270px; width: 398px;"/>
+                <ui:Label text="Label" style="position: absolute; top: 114px; left: 482px;"/>
+                <ui:Toggle label="Ready" style="position: absolute; font-size: 52px; height: 81px; width: 199px; justify-content: flex-start; align-items: stretch; transform-origin: center; top: 105px; left: 1592px;"/>
+            </ui:VisualElement>
+        </ui:GroupBox>
+        <ui:Button text="Button" name="WaitingRoomBackButton"/>
+        <ui:Button text="Button" name="VoteButton"/>
+        <ui:Button text="Button" name="StartLobbyButton"/>
+    </ui:VisualElement>
+</ui:UXML>
