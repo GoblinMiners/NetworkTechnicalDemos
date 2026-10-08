@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using System.Threading.Tasks; // NEW: Required for multithreading
+using System.Threading.Tasks;
 using UnityEngine;
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider))]
@@ -17,8 +17,8 @@ public class Chunk : MonoBehaviour
 
     private List<Vector3> _vertices = new List<Vector3>();
     private List<int> _triangles = new List<int>();
+    private Dictionary<Vector3, int> _vertexMap = new Dictionary<Vector3, int>();
 
-    // NEW: Prevents the chunk from trying to build its mesh twice at the exact same time
     private bool _isGenerating = false;
     private bool _needsRegeneration = false;
 
@@ -52,12 +52,9 @@ public class Chunk : MonoBehaviour
         else
         {
             _densities = new float[_chunkSize.x + 1, _chunkSize.y + 1, _chunkSize.z + 1];
-            
-            // OFF-LOAD THE DENSITY MATH TO A BACKGROUND THREAD!
             await Task.Run(() => GenerateDensities(globalPosition, scale, seed));
         }
 
-        // Build the mesh asynchronously
         await GenerateMeshAsync();
     }
 
@@ -68,7 +65,6 @@ public class Chunk : MonoBehaviour
 
     private void GenerateDensities(Vector3 globalPosition, float scale, int seed)
     {
-        // NOTE: This now runs on a background thread, so NO Unity components can be touched here.
         for (int x = 0; x <= _chunkSize.x; x++)
         {
             for (int y = 0; y <= _chunkSize.y; y++)
@@ -91,10 +87,8 @@ public class Chunk : MonoBehaviour
         }
     }
 
-    // NEW: The Async Mesh Generator
    private async Task GenerateMeshAsync()
     {
-        // THE FIX: If the chunk is already busy, flag it to rebuild AGAIN as soon as it finishes.
         if (_isGenerating) 
         {
             _needsRegeneration = true;
@@ -103,17 +97,15 @@ public class Chunk : MonoBehaviour
 
         _isGenerating = true;
 
-        // Loop until there is no more new damage to process
         do 
         {
             _needsRegeneration = false;
 
-            // 1. DO ALL THE HEAVY MATH ON A BACKGROUND THREAD
             await Task.Run(() => 
             {
                 _vertices.Clear();
                 _triangles.Clear();
-                Dictionary<Vector3, int> vertexMap = new Dictionary<Vector3, int>();
+                _vertexMap.Clear(); 
 
                 for (int x = 0; x < _chunkSize.x; x++)
                 {
@@ -126,7 +118,12 @@ public class Chunk : MonoBehaviour
                             for (int i = 0; i < 8; i++)
                             {
                                 Vector3Int corner = MarchingTable.Corners[i];
-                                if (_densities[x + corner.x, y + corner.y, z + corner.z] < _isoLevel)
+                                float d = _densities[x + corner.x, y + corner.y, z + corner.z];
+                                
+                                // HARD CUTOFF: Prevents floating floating-point artifact ghosts
+                                if (Mathf.Abs(d) < 0.001f) d = 0.001f;
+
+                                if (d < _isoLevel)
                                 {
                                     cubeIndex |= (1 << i);
                                 }
@@ -142,16 +139,15 @@ public class Chunk : MonoBehaviour
                                 Vector3 vertB = GetInterpolatedVertex(x, y, z, b);
                                 Vector3 vertC = GetInterpolatedVertex(x, y, z, c);
 
-                                _triangles.Add(GetOrAddVertex(vertC, vertexMap));
-                                _triangles.Add(GetOrAddVertex(vertB, vertexMap));
-                                _triangles.Add(GetOrAddVertex(vertA, vertexMap));
+                                _triangles.Add(GetOrAddVertex(vertC, _vertexMap));
+                                _triangles.Add(GetOrAddVertex(vertB, _vertexMap));
+                                _triangles.Add(GetOrAddVertex(vertA, _vertexMap));
                             }
                         }
                     }
                 }
             });
 
-            // THE FIX: Unlock the chunk before aborting so it can safely load later!
             if (this == null || gameObject == null || !gameObject.activeInHierarchy) 
             {
                 _isGenerating = false;
@@ -159,23 +155,24 @@ public class Chunk : MonoBehaviour
                 return;
             }
 
-            // 2. COME BACK TO MAIN THREAD TO UPDATE UNITY COMPONENTS
             _mesh.Clear(); 
             _mesh.SetVertices(_vertices);
             _mesh.SetTriangles(_triangles, 0);
-            
             _mesh.RecalculateNormals();
             _mesh.RecalculateBounds();
-            
             _meshFilter.sharedMesh = _mesh;
 
-            if (_vertices.Count >= 3 && _triangles.Count >= 3) _meshCollider.sharedMesh = _mesh; 
-            else _meshCollider.sharedMesh = null; 
+            if (!_needsRegeneration)
+            {
+                if (_vertices.Count >= 3 && _triangles.Count >= 3) _meshCollider.sharedMesh = _mesh; 
+                else _meshCollider.sharedMesh = null; 
+            }
 
-        } while (_needsRegeneration); // If you mined it while it was building, it loops and updates the mesh again!
+        } while (_needsRegeneration); 
 
         _isGenerating = false;
     }
+
     private int GetOrAddVertex(Vector3 vertex, Dictionary<Vector3, int> vertexMap)
     {
         if (vertexMap.TryGetValue(vertex, out int index)) return index;
@@ -228,8 +225,6 @@ public class Chunk : MonoBehaviour
                     if (distance <= radius)
                     {
                         float falloff = 1f - (distance / radius);
-                        
-                        // Because this math runs on the main thread, no damage is ever lost!
                         _densities[x, y, z] += (amount * falloff);
                         updated = true;
                     }
@@ -239,7 +234,6 @@ public class Chunk : MonoBehaviour
         
         if (updated) 
         {
-            // Fire off the background thread without waiting
             _ = GenerateMeshAsync(); 
         }
     }

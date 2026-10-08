@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using UnityEngine;
 using Mirror;
 
@@ -13,7 +15,6 @@ public class World : NetworkBehaviour
     [SerializeField]
     public int customSeed = 0;
 
-    // Synchronized across all clients automatically by Mirror
     [SyncVar(hook = nameof(OnSeedSynced))]
     public int seed;
 
@@ -29,11 +30,21 @@ public class World : NetworkBehaviour
     public int sleepDistanceInChunks = 6; 
     public int maxYChunk = 0; 
 
+    [Header("Physics Settings")]
+    public GameObject debrisPrefab; 
+    public int maxCollapseVolume = 80000; // Increased to allow large boulders to collapse fully
+    public int minCeilingThickness = 2; 
+
     private Dictionary<Vector3Int, Chunk> _activeChunks = new Dictionary<Vector3Int, Chunk>();
     private Dictionary<Vector3Int, Chunk> _sleepingChunks = new Dictionary<Vector3Int, Chunk>();
     private Queue<Chunk> _chunkPool = new Queue<Chunk>();
     private Queue<Vector3Int> _chunksToGenerate = new Queue<Vector3Int>();
     private Dictionary<Vector3Int, float[,,]> _savedChunkData = new Dictionary<Vector3Int, float[,,]>();
+
+    private ConcurrentQueue<List<Vector3Int>> _collapseQueue = new ConcurrentQueue<List<Vector3Int>>();
+    
+    private bool _isCheckingPhysics = false;
+    private float _physicsTimer = 0f;
 
     private Coroutine _chunkManagerCoroutine;
     private bool _worldInitialized = false;
@@ -44,24 +55,34 @@ public class World : NetworkBehaviour
         else Destroy(gameObject);
     }
 
+    private void Update()
+    {
+        if (isServer)
+        {
+            while (_collapseQueue.TryDequeue(out List<Vector3Int> cluster))
+            {
+                CollapseCluster(cluster);
+            }
+
+            // Continuously scan for any orphaned floating pieces every 0.3 seconds in the background
+            _physicsTimer += Time.deltaTime;
+            if (_physicsTimer >= 0.01f && !_isCheckingPhysics) //&& !_isCheckingPhysics
+            {
+                _physicsTimer = 0f;
+                CheckForFloatingIslands();
+            }
+        }
+    }
+
     #region Mirror Initialization & Seed Sync
 
     public override void OnStartServer()
     {
         base.OnStartServer();
-
-        // If the host left customSeed at 0, pick a random seed; otherwise use the specified one
-        if (customSeed == 0)
-        {
-            seed = Random.Range(1000, 99999);
-        }
-        else
-        {
-            seed = customSeed;
-        }
+        if (customSeed == 0) seed = Random.Range(1000, 99999);
+        else seed = customSeed;
     }
 
-    // Called automatically whenever the SyncVar 'seed' changes on clients or host
     private void OnSeedSynced(int oldSeed, int newSeed)
     {
         StartWorldGeneration();
@@ -70,12 +91,7 @@ public class World : NetworkBehaviour
     public override void OnStartClient()
     {
         base.OnStartClient();
-
-        // Fallback in case the seed synced prior to full client startup
-        if (seed != 0 && !_worldInitialized)
-        {
-            StartWorldGeneration();
-        }
+        if (seed != 0 && !_worldInitialized) StartWorldGeneration();
     }
 
     private void StartWorldGeneration()
@@ -223,27 +239,18 @@ public class World : NetworkBehaviour
 
     #region Networked Mining
 
-    // Called locally by a player's miner script
     public void RequestModifyTerrain(Vector3 hitPoint, float radius, float amount)
     {
-        if (isServer)
-        {
-            RpcModifyTerrain(hitPoint, radius, amount);
-        }
-        else
-        {
-            CmdRequestModifyTerrain(hitPoint, radius, amount);
-        }
+        if (isServer) RpcModifyTerrain(hitPoint, radius, amount);
+        else CmdRequestModifyTerrain(hitPoint, radius, amount);
     }
 
-    // Client informs the server of a modification
     [Command(requiresAuthority = false)]
     private void CmdRequestModifyTerrain(Vector3 hitPoint, float radius, float amount)
     {
         RpcModifyTerrain(hitPoint, radius, amount);
     }
 
-    // Server broadcasts the modification to all connected clients
     [ClientRpc]
     private void RpcModifyTerrain(Vector3 hitPoint, float radius, float amount)
     {
@@ -277,14 +284,15 @@ public class World : NetworkBehaviour
                     else
                     {
                         EditUnloadedChunk(coord, hitPoint, radius, amount);
-                        
-                        if (!_chunksToGenerate.Contains(coord))
-                        {
-                            _chunksToGenerate.Enqueue(coord);
-                        }
+                        if (!_chunksToGenerate.Contains(coord)) _chunksToGenerate.Enqueue(coord);
                     }
                 }
             }
+        }
+
+        if (isServer) 
+        {
+            CheckForThinCeilings(hitPoint, radius);
         }
     }
 
@@ -343,6 +351,288 @@ public class World : NetworkBehaviour
                         densities[x, y, z] += (amount * falloff);
                     }
                 }
+            }
+        }
+    }
+
+    #endregion
+
+    #region Structural Integrity Physics
+
+    private void CheckForThinCeilings(Vector3 hitPoint, float radius)
+    {
+        Vector3Int startNode = new Vector3Int(
+            Mathf.RoundToInt(hitPoint.x / voxelSize),
+            Mathf.RoundToInt((hitPoint.y + radius) / voxelSize) + 1,
+            Mathf.RoundToInt(hitPoint.z / voxelSize)
+        );
+
+        int maxScanHeight = 6; 
+        int solidThicknessCount = 0;
+        List<Vector3Int> thinCeilingNodes = new List<Vector3Int>();
+
+        for (int y = 0; y < maxScanHeight; y++)
+        {
+            Vector3Int scanCoord = startNode + new Vector3Int(0, y, 0);
+            float density = GetDensityAtGlobalCoord(scanCoord);
+
+            if (density < 0f) 
+            {
+                solidThicknessCount++;
+                thinCeilingNodes.Add(scanCoord);
+                thinCeilingNodes.Add(scanCoord + Vector3Int.left);
+                thinCeilingNodes.Add(scanCoord + Vector3Int.right);
+                thinCeilingNodes.Add(scanCoord + Vector3Int.forward);
+                thinCeilingNodes.Add(scanCoord + Vector3Int.back);
+            }
+            else if (solidThicknessCount > 0) 
+            {
+                if (solidThicknessCount <= minCeilingThickness)
+                {
+                    _collapseQueue.Enqueue(thinCeilingNodes);
+                }
+                break; 
+            }
+        }
+    }
+
+   private async void CheckForFloatingIslands()
+    {
+        if (_isCheckingPhysics) return;
+        _isCheckingPhysics = true;
+
+        // STEP 1: Safely copy active chunk data references on the MAIN thread to avoid thread crashes
+        Dictionary<Vector3Int, float[,,]> chunkDataSnapshot = new Dictionary<Vector3Int, float[,,]>();
+        foreach (var kvp in _activeChunks)
+        {
+            if (kvp.Value != null)
+            {
+                chunkDataSnapshot[kvp.Key] = kvp.Value.GetDensities();
+            }
+        }
+
+        Vector3Int localChunkSize = chunkSize;
+
+        // STEP 2: Run the heavy calculations safely on the background thread using our snapshot
+        await Task.Run(() =>
+        {
+            HashSet<Vector3Int> processedNodes = new HashSet<Vector3Int>();
+
+            foreach (var chunkPair in chunkDataSnapshot)
+            {
+                Vector3Int chunkCoord = chunkPair.Key;
+                float[,,] densities = chunkPair.Value;
+                if (densities == null) continue;
+
+                Vector3Int minWorldCoord = chunkCoord * localChunkSize;
+
+                for (int x = 0; x < localChunkSize.x; x++)
+                {
+                    for (int y = 0; y < localChunkSize.y; y++)
+                    {
+                        for (int z = 0; z < localChunkSize.z; z++)
+                        {
+                            Vector3Int checkCoord = minWorldCoord + new Vector3Int(x, y, z);
+
+                            if (processedNodes.Contains(checkCoord)) continue;
+
+                            // Check density from our local array snapshot safely
+                            if (densities[x, y, z] < 0f) 
+                            {
+                                // Optimization: Skip deeply buried voxels with no air neighbors
+                                if (!HasAirNeighborSnapshot(checkCoord, chunkDataSnapshot, localChunkSize))
+                                {
+                                    continue;
+                                }
+
+                                List<Vector3Int> cluster = RunFloodFillWithSnapshot(checkCoord, chunkDataSnapshot, localChunkSize, out bool isAnchored);
+
+                                if (!isAnchored && cluster.Count > 0)
+                                {
+                                    _collapseQueue.Enqueue(cluster);
+                                }
+
+                                foreach (var node in cluster)
+                                {
+                                    processedNodes.Add(node);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        _isCheckingPhysics = false;
+    }
+
+    private bool HasAirNeighborSnapshot(Vector3Int globalCoord, Dictionary<Vector3Int, float[,,]> snapshot, Vector3Int size)
+    {
+        Vector3Int[] directions = {
+            Vector3Int.up, Vector3Int.down, Vector3Int.left, 
+            Vector3Int.right, Vector3Int.forward, Vector3Int.back
+        };
+
+        foreach (var dir in directions)
+        {
+            if (GetDensityFromSnapshot(globalCoord + dir, snapshot, size) >= 0f) 
+            {
+                return true; 
+            }
+        }
+        return false; 
+    }
+
+    private List<Vector3Int> RunFloodFillWithSnapshot(Vector3Int startNode, Dictionary<Vector3Int, float[,,]> snapshot, Vector3Int size, out bool isAnchored)
+    {
+        HashSet<Vector3Int> visited = new HashSet<Vector3Int>();
+        Queue<Vector3Int> queue = new Queue<Vector3Int>();
+        List<Vector3Int> cluster = new List<Vector3Int>();
+        
+        queue.Enqueue(startNode);
+        visited.Add(startNode);
+        isAnchored = false;
+
+        Vector3Int[] directions = {
+            Vector3Int.up, Vector3Int.down, Vector3Int.left, 
+            Vector3Int.right, Vector3Int.forward, Vector3Int.back
+        };
+
+        while (queue.Count > 0)
+        {
+            Vector3Int current = queue.Dequeue();
+            cluster.Add(current);
+
+            if (current.y <= 0) 
+            {
+                isAnchored = true;
+                break;
+            }
+
+            if (cluster.Count >= maxCollapseVolume) 
+            {
+                isAnchored = true;
+                break;
+            }
+
+            foreach (Vector3Int dir in directions)
+            {
+                Vector3Int neighbor = current + dir;
+
+                if (!visited.Contains(neighbor))
+                {
+                    visited.Add(neighbor);
+                    
+                    if (GetDensityFromSnapshot(neighbor, snapshot, size) < 0f)
+                    {
+                        queue.Enqueue(neighbor);
+                    }
+                }
+            }
+        }
+
+        return cluster;
+    }
+
+    private float GetDensityFromSnapshot(Vector3Int globalCoord, Dictionary<Vector3Int, float[,,]> snapshot, Vector3Int size)
+    {
+        Vector3Int chunkCoord = new Vector3Int(
+            Mathf.FloorToInt((float)globalCoord.x / size.x),
+            Mathf.FloorToInt((float)globalCoord.y / size.y),
+            Mathf.FloorToInt((float)globalCoord.z / size.z)
+        );
+
+        if (snapshot.TryGetValue(chunkCoord, out float[,,] densities))
+        {
+            Vector3Int localCoord = globalCoord - (chunkCoord * size);
+            
+            if (localCoord.x >= 0 && localCoord.x <= size.x &&
+                localCoord.y >= 0 && localCoord.y <= size.y &&
+                localCoord.z >= 0 && localCoord.z <= size.z)
+            {
+                return densities[localCoord.x, localCoord.y, localCoord.z];
+            }
+        }
+        return -1f; 
+    }
+    private void CollapseCluster(List<Vector3Int> cluster)
+    {
+        if (cluster.Count == 0) return;
+
+        Vector3 minBounds = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+        Vector3 maxBounds = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+        HashSet<Vector3Int> affectedChunks = new HashSet<Vector3Int>();
+
+        foreach (Vector3Int node in cluster)
+        {
+            SetDensityAtGlobalCoord(node, 1f); // 1f = Air
+            
+            Vector3 worldPos = new Vector3(node.x, node.y, node.z) * voxelSize;
+            minBounds = Vector3.Min(minBounds, worldPos);
+            maxBounds = Vector3.Max(maxBounds, worldPos);
+
+            affectedChunks.Add(GetChunkCoordFromPosition(worldPos));
+        }
+
+        if (debrisPrefab != null) 
+        {
+            Vector3 boundingCenter = (minBounds + maxBounds) / 2f;
+            Vector3 exactSize = maxBounds - minBounds;
+            exactSize = Vector3.Max(exactSize, new Vector3(voxelSize, voxelSize, voxelSize));
+
+            GameObject debris = Instantiate(debrisPrefab, boundingCenter, Random.rotation);
+            debris.transform.localScale = exactSize;
+            NetworkServer.Spawn(debris);
+        }
+
+        RpcRebuildSpecificChunks(new List<Vector3Int>(affectedChunks));
+    }
+
+    [ClientRpc]
+    private void RpcRebuildSpecificChunks(List<Vector3Int> chunkCoords)
+    {
+        foreach (var coord in chunkCoords)
+        {
+            if (_activeChunks.TryGetValue(coord, out Chunk chunk))
+            {
+                chunk.EditTerrain(chunk.transform.position, 0.1f, 0f);
+            }
+        }
+    }
+
+    private float GetDensityAtGlobalCoord(Vector3Int globalCoord)
+    {
+        Vector3 globalPos = new Vector3(globalCoord.x, globalCoord.y, globalCoord.z) * voxelSize;
+        Vector3Int chunkCoord = GetChunkCoordFromPosition(globalPos);
+
+        if (_activeChunks.TryGetValue(chunkCoord, out Chunk chunk))
+        {
+            Vector3Int localCoord = globalCoord - new Vector3Int(chunkCoord.x * chunkSize.x, chunkCoord.y * chunkSize.y, chunkCoord.z * chunkSize.z);
+            
+            if (localCoord.x >= 0 && localCoord.x <= chunkSize.x &&
+                localCoord.y >= 0 && localCoord.y <= chunkSize.y &&
+                localCoord.z >= 0 && localCoord.z <= chunkSize.z)
+            {
+                return chunk.GetDensities()[localCoord.x, localCoord.y, localCoord.z];
+            }
+        }
+        return -1f; 
+    }
+
+    private void SetDensityAtGlobalCoord(Vector3Int globalCoord, float density)
+    {
+        Vector3 globalPos = new Vector3(globalCoord.x, globalCoord.y, globalCoord.z) * voxelSize;
+        Vector3Int chunkCoord = GetChunkCoordFromPosition(globalPos);
+
+        if (_activeChunks.TryGetValue(chunkCoord, out Chunk chunk))
+        {
+            Vector3Int localCoord = globalCoord - new Vector3Int(chunkCoord.x * chunkSize.x, chunkCoord.y * chunkSize.y, chunkCoord.z * chunkSize.z);
+            
+            if (localCoord.x >= 0 && localCoord.x <= chunkSize.x &&
+                localCoord.y >= 0 && localCoord.y <= chunkSize.y &&
+                localCoord.z >= 0 && localCoord.z <= chunkSize.z)
+            {
+                chunk.GetDensities()[localCoord.x, localCoord.y, localCoord.z] = density;
             }
         }
     }

@@ -162,6 +162,9 @@ MonoBehaviour:
   viewDistanceInChunks: 6
   sleepDistanceInChunks: 12
   maxYChunk: 0
+  debrisPrefab: {fileID: 5108917710695762759, guid: 7221667964a0f404888b500c319926bc, type: 3}
+  maxCollapseVolume: 100000
+  minCeilingThickness: 1
 --- !u!4 &5491321
 Transform:
   m_ObjectHideFlags: 0
