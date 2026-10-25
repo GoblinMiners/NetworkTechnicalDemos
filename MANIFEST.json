@@ -1,0 +1,666 @@
+{
+  "title": "Gobmine Materials and Debris cumulative source patch",
+  "status": "Not Unity/C# compiled or play-tested",
+  "validation_groups_executed": {
+    "python_debris_models_and_static": 13,
+    "python_material_models_and_static": 16
+  },
+  "provided_unity_groups_not_executed": 56,
+  "existing_meta_files_preserved_in_merged_snapshot": 58,
+  "changed_existing_assets": [
+    "Prefabs/Debris.prefab",
+    "Prefabs/Player.prefab",
+    "Scene/DemoLvl.unity",
+    "Scene/Menu.unity",
+    "Scripts/Chunks/Chunk.cs",
+    "Scripts/Chunks/World.cs",
+    "Scripts/PlayerScript/PlayerInventory.cs",
+    "Scripts/PlayerScript/PlayerMiner.cs",
+    "Scripts/PlayerScript/PlayerMovement.cs",
+    "Scripts/PlayerScript/PlayerNetworkRegistration.cs",
+    "Scripts/PlayerScript/VoxelMiner.cs",
+    "Scripts/Save/WorldSaver.cs",
+    "Scripts/Voxel/DebrisCleanup.cs",
+    "Scripts/Voxel/DebrisPool.cs"
+  ],
+  "new_assets_excluding_meta": [
+    "Resources/Gobmine/CopperOreDebris.mat",
+    "Resources/Gobmine/CopperOreDefinition.asset",
+    "Resources/Gobmine/CopperOreItem.asset",
+    "Resources/Gobmine/CopperOreTerrain.mat",
+    "Resources/Gobmine/GoldOreDebris.mat",
+    "Resources/Gobmine/GoldOreDefinition.asset",
+    "Resources/Gobmine/GoldOreItem.asset",
+    "Resources/Gobmine/GoldOreTerrain.mat",
+    "Resources/Gobmine/OrePickup.prefab",
+    "Resources/Gobmine/SilverOreDebris.mat",
+    "Resources/Gobmine/SilverOreDefinition.asset",
+    "Resources/Gobmine/SilverOreItem.asset",
+    "Resources/Gobmine/SilverOreTerrain.mat",
+    "Resources/Gobmine/StoneDebris.mat",
+    "Resources/Gobmine/StoneDefinition.asset",
+    "Resources/Gobmine/StoneItem.asset",
+    "Resources/Gobmine/StoneTerrain.mat",
+    "Resources/Gobmine/TerrainMaterialCatalog.asset",
+    "Scripts/Chunks/TerrainDensityStore.cs",
+    "Scripts/Chunks/TerrainMeshBuilder.cs",
+    "Scripts/Chunks/TerrainStructuralSolver.cs",
+    "Scripts/Chunks/TerrainVolume.cs",
+    "Scripts/Chunks/WorldMaterials.cs",
+    "Scripts/Editor/DebrisRegressionTests.cs",
+    "Scripts/Editor/GobmineMaterialSetup.cs",
+    "Scripts/Editor/MaterialRegressionTests.cs",
+    "Scripts/Materials/TerrainMaterialCatalog.cs",
+    "Scripts/Materials/TerrainMaterialDefinition.cs",
+    "Scripts/Materials/TerrainMaterialGenerator.cs",
+    "Scripts/Materials/TerrainQuery.cs",
+    "Scripts/PlayerScript/MiningInventoryHUD.cs",
+    "Scripts/PlayerScript/MiningServerValidation.cs",
+    "Scripts/ResourcesSystem/OrePickup.cs",
+    "Scripts/ResourcesSystem/ResourcePileStore.cs",
+    "Scripts/Save/MaterialWorldPersistence.cs",
+    "Shaders/TerrainOreURP.shader"
+  ],
+  "payload": [
+    {
+      "path": "Assets/Game/Prefabs/Debris.prefab",
+      "bytes": 6059,
+      "sha256": "67b8d526a21b21025dccdbeddc444673774aad738488e2900804c8a1b107033a"
+    },
+    {
+      "path": "Assets/Game/Prefabs/Debris.prefab.meta",
+      "bytes": 154,
+      "sha256": "f77b326b4260235a2c9ce85ce663a982268a0e5eac9e53c2f6543a41555eead8"
+    },
+    {
+      "path": "Assets/Game/Prefabs/Player.prefab",
+      "bytes": 16189,
+      "sha256": "c9c298707334a3f825d1c6bb3cba659a1e79fcd5895d1e1cfe97df44e2a4f3e2"
+    },
+    {
+      "path": "Assets/Game/Prefabs/Player.prefab.meta",
+      "bytes": 154,
+      "sha256": "caf491bff99dc4feba552d641cd581e9fd169889c9a829deba4c8617a14db730"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/CopperOreDebris.mat",
+      "bytes": 1084,
+      "sha256": "6c0854a430c1faa4188f6ba07403d58afcc89a089509a290b2d2c8de8938c6a7"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/CopperOreDebris.mat.meta",
+      "bytes": 188,
+      "sha256": "830c762d03153404456ac00902bbe2bf277b05d659d3b99d67009acc7a927897"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/CopperOreDefinition.asset",
+      "bytes": 963,
+      "sha256": "3236fc171b83231bcc4fa199a9ea7bd3c8ea8266cd9146ee30b835b1584e0bcf"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/CopperOreDefinition.asset.meta",
+      "bytes": 189,
+      "sha256": "3ee0ee1eb2c6317bc58fc3eed21e6a5db684fe2e0a368bdc659b152b4fbef259"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/CopperOreItem.asset",
+      "bytes": 560,
+      "sha256": "e5bc3ff4e9579b1b331353542d88a5807aac594217a8562fc71f5d7660552797"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/CopperOreItem.asset.meta",
+      "bytes": 189,
+      "sha256": "9d9825485f963c982471f09349ee78f019fb879deb2620d24c81269dbed9bc2d"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/CopperOreTerrain.mat",
+      "bytes": 1085,
+      "sha256": "095192d9068699b21a58605e4c75aff066f7634a8223bf276aefea7706c0c3b0"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/CopperOreTerrain.mat.meta",
+      "bytes": 188,
+      "sha256": "2ea435a5e3b1f53b42ffe3b978c15a636aee96c174ccc8fd091a4ccad0b1e7fc"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/GoldOreDebris.mat",
+      "bytes": 1082,
+      "sha256": "fda5a77dd38efeccd35daeb5a0351f9c54af145e57439e8a421a23ed5c788c91"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/GoldOreDebris.mat.meta",
+      "bytes": 188,
+      "sha256": "8b19a0ee37b24251bb68b415dc855e2ed935946dabda5c495889e63fb2779d03"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/GoldOreDefinition.asset",
+      "bytes": 955,
+      "sha256": "21c71d60f4675673deddf57fd813d70584ef7c03e825c2daa0a868c720f3569a"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/GoldOreDefinition.asset.meta",
+      "bytes": 189,
+      "sha256": "5084ba425b3d3c8e5deffc3e20cb235b205307fc67a34aa7c2d947353cc447b8"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/GoldOreItem.asset",
+      "bytes": 557,
+      "sha256": "956df7c7100cc656aa471276cdc80a673bf71cfcb8b0dcb1d0633b62ad507cd3"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/GoldOreItem.asset.meta",
+      "bytes": 189,
+      "sha256": "4f6e82baa3d85f620d3df2b885a9a8df561883d97883b0837964394cc5962177"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/GoldOreTerrain.mat",
+      "bytes": 1083,
+      "sha256": "bfac26ac8d93af9217d731517ac0b6c57a7283e391e9a951f3c9a06d21616b3d"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/GoldOreTerrain.mat.meta",
+      "bytes": 188,
+      "sha256": "6135d2f487828cd45681e471789f049226352a5a816d00069a9ff60325bccb5f"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/OrePickup.prefab",
+      "bytes": 5408,
+      "sha256": "c38315dcf678adefd4f12594098273201076b6d69c6af25720796fc15e21cce1"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/OrePickup.prefab.meta",
+      "bytes": 154,
+      "sha256": "86627abe5bd5f1d1347a9a75a0efa5e7b7985d50735052a15ecf227da457e445"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/SilverOreDebris.mat",
+      "bytes": 1082,
+      "sha256": "6bb9bed8890418e291ab284f38bed77c4b05266cd19729c3e74841aedd7b1c23"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/SilverOreDebris.mat.meta",
+      "bytes": 188,
+      "sha256": "636ab7871848b329013506e7a61814fc9de6300f64a36bf6ee1da9629532140e"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/SilverOreDefinition.asset",
+      "bytes": 962,
+      "sha256": "0e3f984e79307461501c180f3221ca1200196147cc29d207bd66a4f48f9161a8"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/SilverOreDefinition.asset.meta",
+      "bytes": 189,
+      "sha256": "a99044c70f32e598c413d023c0c1724da9e141005c3a281d5f03bf7ce51f24fd"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/SilverOreItem.asset",
+      "bytes": 558,
+      "sha256": "a317564511dfd162d08db348ccabe3f78c6bedc605f2569af25c66f45e694404"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/SilverOreItem.asset.meta",
+      "bytes": 189,
+      "sha256": "5046a361f85f2e4278f618312ff19f679a5e3f5c2586d5cdd2a4926c1dc7b3fa"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/SilverOreTerrain.mat",
+      "bytes": 1083,
+      "sha256": "a85ee44e992077b82a5f69b380f828c21f4da64fb56a98f1bdc9fb56fdbfd4d4"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/SilverOreTerrain.mat.meta",
+      "bytes": 188,
+      "sha256": "cd5dea0edcbc05347990acddeac9fce06c22bfc55d189b3ce18b63aa6294f247"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/StoneDebris.mat",
+      "bytes": 1076,
+      "sha256": "3939cc057dd0acdce7c4018c41aac329bfd71b7924df6786d58e2ea269fddc0a"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/StoneDebris.mat.meta",
+      "bytes": 188,
+      "sha256": "0785d1dcf6f1c7f7cbe5fb525c79bf18a3069a88cc6531a4e143835cd4863dc1"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/StoneDefinition.asset",
+      "bytes": 947,
+      "sha256": "ce9c78358f9d22494230c45c6bfffd65d71b740f7a3d993ab1731b9b984232d5"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/StoneDefinition.asset.meta",
+      "bytes": 189,
+      "sha256": "e4e7ac6a5b850567d8d36e912222d43da387a6624b188d2c2b77f18ba796739f"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/StoneItem.asset",
+      "bytes": 548,
+      "sha256": "638fdb153d5930294e5632047422e9fdec972f935cc0ed1b39247ddbaab808c2"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/StoneItem.asset.meta",
+      "bytes": 189,
+      "sha256": "39c29d802b0d3d410203dec05ac508f1c114201ec6c9e29f333169cac48877dd"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/StoneTerrain.mat",
+      "bytes": 1077,
+      "sha256": "b94b521447d35377ab3ee2209bbf131faa632778b26ce16b9b0372a833f35212"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/StoneTerrain.mat.meta",
+      "bytes": 188,
+      "sha256": "43f3cc00524856e2d825689e527b9f8fd34fc32b6cb9e38034bb2b68fdedc0d6"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/TerrainMaterialCatalog.asset",
+      "bytes": 770,
+      "sha256": "04180375db977b2b0f13c13a0378f11db99fd87a42f4ef3669281c52b041e1b6"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine/TerrainMaterialCatalog.asset.meta",
+      "bytes": 189,
+      "sha256": "aa54a817b80671b35fc2d0f9c316105bf56c2e5930df1d23cdd4c411caa878ec"
+    },
+    {
+      "path": "Assets/Game/Resources/Gobmine.meta",
+      "bytes": 172,
+      "sha256": "57e22ae20ec765f00e2aad67a3b3bc8c2e1dbcc946d2f9a1e2c69b5f1932f837"
+    },
+    {
+      "path": "Assets/Game/Resources.meta",
+      "bytes": 172,
+      "sha256": "4fa6d0a7bf7ccddc5db0dcb083600de4a89070697ef4464bd91cbcb92fcf20bf"
+    },
+    {
+      "path": "Assets/Game/Scene/DemoLvl.unity",
+      "bytes": 29063,
+      "sha256": "b4d1627c3c1735842b9945b6ad811f37d4b15d11335b54ce70a8c6de282ce987"
+    },
+    {
+      "path": "Assets/Game/Scene/DemoLvl.unity.meta",
+      "bytes": 155,
+      "sha256": "c4253167b9771b37f8fee0dbfafe02da948f912a57c090040b5aab3ea5a0352d"
+    },
+    {
+      "path": "Assets/Game/Scene/Menu.unity",
+      "bytes": 16388,
+      "sha256": "a41b71ee5294cdac6ec05149eb2b2da03b0804ff4f433470c69431684aff5e5a"
+    },
+    {
+      "path": "Assets/Game/Scene/Menu.unity.meta",
+      "bytes": 155,
+      "sha256": "e774c05d980529dc7ea7e1bb69eb01d64d3ce2a0b0c46319c33f2617b270f6b4"
+    },
+    {
+      "path": "Assets/Game/Scripts/Chunks/Chunk.cs",
+      "bytes": 2705,
+      "sha256": "b2bacb233c56cbd3b29c0c723d7df5d5ae42c5de551b35248e593b68fea509c3"
+    },
+    {
+      "path": "Assets/Game/Scripts/Chunks/Chunk.cs.meta",
+      "bytes": 59,
+      "sha256": "62a35084ee15463fcd081a2aeb7459f2ec3675f5279e31132404774359a3f30a"
+    },
+    {
+      "path": "Assets/Game/Scripts/Chunks/TerrainDensityStore.cs",
+      "bytes": 6156,
+      "sha256": "cf632a97c5f9bceccf7284efd36abb356704068f0a6338e8c0c524d7e24e6e95"
+    },
+    {
+      "path": "Assets/Game/Scripts/Chunks/TerrainDensityStore.cs.meta",
+      "bytes": 243,
+      "sha256": "0df7d105eeaa5842a56e0531c31c5d1a3b82dddb17c4dca8988b4ea75437eb4e"
+    },
+    {
+      "path": "Assets/Game/Scripts/Chunks/TerrainMeshBuilder.cs",
+      "bytes": 2723,
+      "sha256": "ee9077f0cfeb17d714dfee80af3c53b6650c0a94bb1a04cfc1bf8eeeb6e9b4d1"
+    },
+    {
+      "path": "Assets/Game/Scripts/Chunks/TerrainMeshBuilder.cs.meta",
+      "bytes": 243,
+      "sha256": "bdd2b563e30afad7100b9f82f3bb40b0d9cf850900bf1d2c23efdfd84c3ef112"
+    },
+    {
+      "path": "Assets/Game/Scripts/Chunks/TerrainStructuralSolver.cs",
+      "bytes": 7361,
+      "sha256": "a3705797ad361334aed08b5d1aa0e8b0617ce27c7693964a4239bd7d87734fad"
+    },
+    {
+      "path": "Assets/Game/Scripts/Chunks/TerrainStructuralSolver.cs.meta",
+      "bytes": 243,
+      "sha256": "5b096b15d800d5cd91705a01298acdd0f113ab88459646124037f9c1d846677e"
+    },
+    {
+      "path": "Assets/Game/Scripts/Chunks/TerrainVolume.cs",
+      "bytes": 3040,
+      "sha256": "fd6ced0ffc184766497d081ac74173bc364f410fe0f36ce68557efe4e8ef397a"
+    },
+    {
+      "path": "Assets/Game/Scripts/Chunks/TerrainVolume.cs.meta",
+      "bytes": 243,
+      "sha256": "675b47994c8e5350a1d2a13d50e111a06fea3c00d5100127e2d5098b6e50a1e3"
+    },
+    {
+      "path": "Assets/Game/Scripts/Chunks/World.cs",
+      "bytes": 31841,
+      "sha256": "f92dee79ba67703888bb30c449ab7b71ab33c3edc5580470c92dbac210f70e57"
+    },
+    {
+      "path": "Assets/Game/Scripts/Chunks/World.cs.meta",
+      "bytes": 59,
+      "sha256": "7a3b0da6da2ba13dd1df95a5023dfc88cdcde6db0d9ad173d3720dd6d1702da8"
+    },
+    {
+      "path": "Assets/Game/Scripts/Chunks/WorldMaterials.cs",
+      "bytes": 13733,
+      "sha256": "2884d4f5d40a06a38e2f8d4c5d6d01ccaf6df56b11590ba7a08297cecaf0abee"
+    },
+    {
+      "path": "Assets/Game/Scripts/Chunks/WorldMaterials.cs.meta",
+      "bytes": 243,
+      "sha256": "ed6083e7a7a3f3838bd2c6a1b2c18d206dd45098d2b5bdf1c6cba2502904b9ea"
+    },
+    {
+      "path": "Assets/Game/Scripts/Editor/DebrisRegressionTests.cs",
+      "bytes": 13963,
+      "sha256": "eaea420d83e6c4551866ede285972b43d251802e1bcc15139bd2d19684870ad7"
+    },
+    {
+      "path": "Assets/Game/Scripts/Editor/DebrisRegressionTests.cs.meta",
+      "bytes": 243,
+      "sha256": "9dc7346b6c507aa3afa1dc2e2f7aaca7bdf53dcae213c6f7220bd72f2f4fee39"
+    },
+    {
+      "path": "Assets/Game/Scripts/Editor/GobmineMaterialSetup.cs",
+      "bytes": 7512,
+      "sha256": "f5c8e15815462d273b57de134fac5c543ad2b33a01b5f4c2b3fec73843d3867a"
+    },
+    {
+      "path": "Assets/Game/Scripts/Editor/GobmineMaterialSetup.cs.meta",
+      "bytes": 243,
+      "sha256": "e539ec9c512ab74f4dbfc4e25c615ccbe7315f5023fae80e2233a8207fd5db42"
+    },
+    {
+      "path": "Assets/Game/Scripts/Editor/MaterialRegressionTests.cs",
+      "bytes": 12928,
+      "sha256": "cee006b944101a0b0f74ccc36a9025e0dfba2a27a505f3ddf5b0f6a4d3000c9c"
+    },
+    {
+      "path": "Assets/Game/Scripts/Editor/MaterialRegressionTests.cs.meta",
+      "bytes": 243,
+      "sha256": "64d1e9e4010b26d41c45fdb011cd29f3f1c65fd4166b3be9fa161198e702b731"
+    },
+    {
+      "path": "Assets/Game/Scripts/Editor.meta",
+      "bytes": 172,
+      "sha256": "af07a32da3a7e83b08d1f851554b883df43e41a7e27b62f1245c83122372cfb7"
+    },
+    {
+      "path": "Assets/Game/Scripts/Materials/TerrainMaterialCatalog.cs",
+      "bytes": 4944,
+      "sha256": "987a0968357a5bc7aa7ea3809b1dee901e7a8e7db37560be13e7681bb7d769e0"
+    },
+    {
+      "path": "Assets/Game/Scripts/Materials/TerrainMaterialCatalog.cs.meta",
+      "bytes": 243,
+      "sha256": "f151f98e8b3e4067cee454776ee17a7720499e4f5ae63f1d97acca84fefadac8"
+    },
+    {
+      "path": "Assets/Game/Scripts/Materials/TerrainMaterialDefinition.cs",
+      "bytes": 1166,
+      "sha256": "ae3456456635250f1e5fef44586a273d0072945cde29348a44d25b5202fbe3ca"
+    },
+    {
+      "path": "Assets/Game/Scripts/Materials/TerrainMaterialDefinition.cs.meta",
+      "bytes": 243,
+      "sha256": "116f345b813973252f82315d212e146a7260ed8f53b0cab5fc5fd8630de72b76"
+    },
+    {
+      "path": "Assets/Game/Scripts/Materials/TerrainMaterialGenerator.cs",
+      "bytes": 4135,
+      "sha256": "9827e0c40bd1b0150dc03f8e369a64243d1c9400521b9397d1b86b1cfd936fef"
+    },
+    {
+      "path": "Assets/Game/Scripts/Materials/TerrainMaterialGenerator.cs.meta",
+      "bytes": 243,
+      "sha256": "2fb7947aaeeb9041720211f5178145e678ab54e077b539b02595306590298132"
+    },
+    {
+      "path": "Assets/Game/Scripts/Materials/TerrainQuery.cs",
+      "bytes": 1251,
+      "sha256": "5dfbba7f9890afbd9c0709d2f9a029f4dfca135cc96fd183e8483513ff1b0bbe"
+    },
+    {
+      "path": "Assets/Game/Scripts/Materials/TerrainQuery.cs.meta",
+      "bytes": 243,
+      "sha256": "c6c1ae96c4d7d63a026371c90aaa18be4ce022acb8d9a61810d63a33acae716e"
+    },
+    {
+      "path": "Assets/Game/Scripts/Materials.meta",
+      "bytes": 172,
+      "sha256": "5e5cc5cf7dcb77febb6744353c2f7e4e8a8d9f895d849a66a18adff81e700136"
+    },
+    {
+      "path": "Assets/Game/Scripts/PlayerScript/MiningInventoryHUD.cs",
+      "bytes": 2168,
+      "sha256": "feca5d471ebb16821de0e50f0ad4731f2220b4613c103236c38042e22abde5ae"
+    },
+    {
+      "path": "Assets/Game/Scripts/PlayerScript/MiningInventoryHUD.cs.meta",
+      "bytes": 243,
+      "sha256": "330717b6991f3b49936ee5a4aae49310ccd712cba2aecb5964edc884543ece3a"
+    },
+    {
+      "path": "Assets/Game/Scripts/PlayerScript/MiningServerValidation.cs",
+      "bytes": 1621,
+      "sha256": "04d3a6adc8ae256af71f3d0bd00fb862adde5ea95650d2b12e37b2ef1281d666"
+    },
+    {
+      "path": "Assets/Game/Scripts/PlayerScript/MiningServerValidation.cs.meta",
+      "bytes": 243,
+      "sha256": "091ab9a17aaba26014ae32d8378a452e89fa8e00f332753f6dfb9181e49240cb"
+    },
+    {
+      "path": "Assets/Game/Scripts/PlayerScript/PlayerInventory.cs",
+      "bytes": 3470,
+      "sha256": "66f158be97aafbb03578d09c78d033f44c2c3e26915868aa6d74cf76e5f354ae"
+    },
+    {
+      "path": "Assets/Game/Scripts/PlayerScript/PlayerInventory.cs.meta",
+      "bytes": 59,
+      "sha256": "eb73a89687d2a2a5c6299ab2b06a2b4041062f465bbf8bdcfe87ec8d60e64afd"
+    },
+    {
+      "path": "Assets/Game/Scripts/PlayerScript/PlayerMiner.cs",
+      "bytes": 1417,
+      "sha256": "a982eca0fc24be74ae25bdbc795ec3dd4b2fe84f8fc16d4d99a47026a9380ce0"
+    },
+    {
+      "path": "Assets/Game/Scripts/PlayerScript/PlayerMiner.cs.meta",
+      "bytes": 59,
+      "sha256": "a47017da09a525b75543123dca35c62df6549a631cdee057d5585b2d2dab07f2"
+    },
+    {
+      "path": "Assets/Game/Scripts/PlayerScript/PlayerMovement.cs",
+      "bytes": 2355,
+      "sha256": "d40b3ccd3eb1ba9f33c116f726d3b17613baf8f52d336928d3296d66f94954f1"
+    },
+    {
+      "path": "Assets/Game/Scripts/PlayerScript/PlayerMovement.cs.meta",
+      "bytes": 59,
+      "sha256": "618d953c2ca558774b324a8dffe07edf2128cb34dd8b766c7a96224973160213"
+    },
+    {
+      "path": "Assets/Game/Scripts/PlayerScript/PlayerNetworkRegistration.cs",
+      "bytes": 1125,
+      "sha256": "70efc9d4333ce8a89dd2c86ccff545a8a69d5338caf05395250a8d5a3afdc43d"
+    },
+    {
+      "path": "Assets/Game/Scripts/PlayerScript/PlayerNetworkRegistration.cs.meta",
+      "bytes": 59,
+      "sha256": "bf95c1163a1203ba10d166b8786ef8e984a1fc4bd86d4efd009f26836c694cf1"
+    },
+    {
+      "path": "Assets/Game/Scripts/PlayerScript/VoxelMiner.cs",
+      "bytes": 1308,
+      "sha256": "6312371ad65d9eb54e91f59cbb2bdc18ca036a33b6c984b4803a1673408ce4c4"
+    },
+    {
+      "path": "Assets/Game/Scripts/PlayerScript/VoxelMiner.cs.meta",
+      "bytes": 59,
+      "sha256": "04c844cfaf95fe8af7504f4d37788dba0f9eefe3cd15686471c0398d38eb0b52"
+    },
+    {
+      "path": "Assets/Game/Scripts/ResourcesSystem/OrePickup.cs",
+      "bytes": 3074,
+      "sha256": "c67007720d69b6b71d6d6a4ffd3efd2473a799e3297fa3885b33052b7f7b80f7"
+    },
+    {
+      "path": "Assets/Game/Scripts/ResourcesSystem/OrePickup.cs.meta",
+      "bytes": 243,
+      "sha256": "f5bbc0adc99ba1176b8e1de8511fa4153b4d2f32c130b829ff3c801a27d769f4"
+    },
+    {
+      "path": "Assets/Game/Scripts/ResourcesSystem/ResourcePileStore.cs",
+      "bytes": 3168,
+      "sha256": "7e6c1bdc103003d9e72e50018ca4c54016024ae7ea46a8daf1d7a9ed8bad77fc"
+    },
+    {
+      "path": "Assets/Game/Scripts/ResourcesSystem/ResourcePileStore.cs.meta",
+      "bytes": 243,
+      "sha256": "9da45a3520b0e421015e467bc9026c33c80deec89ea440dea1843a7706066871"
+    },
+    {
+      "path": "Assets/Game/Scripts/ResourcesSystem.meta",
+      "bytes": 172,
+      "sha256": "719203e60add494fbd81474a5a18415e4ef8c6c8225be4a48d2b621105b9289e"
+    },
+    {
+      "path": "Assets/Game/Scripts/Save/MaterialWorldPersistence.cs",
+      "bytes": 6167,
+      "sha256": "00213ea695b78809bc188170d3dae982bbafd3400a27075e2d6e7153a626e43d"
+    },
+    {
+      "path": "Assets/Game/Scripts/Save/MaterialWorldPersistence.cs.meta",
+      "bytes": 243,
+      "sha256": "a6baf07568eff2c82bd8be3ccfde0dee0ae0f57aeb8b4265e9e460995e70669c"
+    },
+    {
+      "path": "Assets/Game/Scripts/Save/WorldSaver.cs",
+      "bytes": 4089,
+      "sha256": "7064c68ff748c7531509762c6058967257dd5b454359a773adddf2e344f1d251"
+    },
+    {
+      "path": "Assets/Game/Scripts/Save/WorldSaver.cs.meta",
+      "bytes": 59,
+      "sha256": "9bac7b0876f07b82c33a71bd811c2b2e27a869c3efc99bdd947959b51f4f3610"
+    },
+    {
+      "path": "Assets/Game/Scripts/Voxel/DebrisCleanup.cs",
+      "bytes": 2326,
+      "sha256": "32c9099d3c3bd4a0066e14858ae6a363b660c870a652e84c0c9c188d5c2b5206"
+    },
+    {
+      "path": "Assets/Game/Scripts/Voxel/DebrisCleanup.cs.meta",
+      "bytes": 59,
+      "sha256": "a3fd77212c902f932724f813f2627672c7cee2b525feef1dfc3f5f36e7916881"
+    },
+    {
+      "path": "Assets/Game/Scripts/Voxel/DebrisPool.cs",
+      "bytes": 5970,
+      "sha256": "3f88a0144e4360693bdc31b2928e4e68e844655f4433202a718fb11f5994348d"
+    },
+    {
+      "path": "Assets/Game/Scripts/Voxel/DebrisPool.cs.meta",
+      "bytes": 59,
+      "sha256": "febe0d59b1dd6ff9907174b900de716382f9da9743bbcf79888d6d474dfda5fe"
+    },
+    {
+      "path": "Assets/Game/Shaders/TerrainOreURP.shader",
+      "bytes": 8803,
+      "sha256": "b5078b3bdc736ef63ba5c473550d8c7ea7b97fc7ef152af167aa14a7312b12b9"
+    },
+    {
+      "path": "Assets/Game/Shaders/TerrainOreURP.shader.meta",
+      "bytes": 204,
+      "sha256": "a00d6a63f0a41b5ad35f3bade1818f73e7bee367b1791689d446eaee3f1ca337"
+    },
+    {
+      "path": "Assets/Game/Shaders.meta",
+      "bytes": 172,
+      "sha256": "6c16af7c9ebfa625765dc94034849aa8908fa74d1ea944659f78ceb401e940ef"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 2839,
+      "sha256": "2d3db3f788eb6a824a2c24a8112a8f95ebf108489ea57bde349ca636d7bb7a73"
+    },
+    {
+      "path": "README.md",
+      "bytes": 13227,
+      "sha256": "293bd2d40883be740c3b76f9f60a06c6b8095e88c74851d9769d0ea73df0d350"
+    },
+    {
+      "path": "SOURCE_CHANGES.patch",
+      "bytes": 238825,
+      "sha256": "4285667bd7c7e70022502252e22973a4aeeb1b486ddf54ff678b4aa316f31b0d"
+    },
+    {
+      "path": "TEST_PLAN.md",
+      "bytes": 4973,
+      "sha256": "545ac11043a478b08a369fd2fac94067fd33f942ceb29de621bee6d2803ef127"
+    },
+    {
+      "path": "VALIDATION_REPORT.md",
+      "bytes": 4104,
+      "sha256": "a4f7f063f3b46148c06f419bd251632801d3ea68160fd54994ce33c06930a1cf"
+    },
+    {
+      "path": "Validation/debris_model_results.log",
+      "bytes": 2335,
+      "sha256": "2b7a1b61771efd1d59ad50bb5e2cdffcc874eb970042a88ce558e75a9d3f6b6e"
+    },
+    {
+      "path": "Validation/material_model_results.json",
+      "bytes": 2874,
+      "sha256": "85fece593f67711f854a3fbd6fcf2940a47b0183088a73f2e43f7b3e9cf01e42"
+    },
+    {
+      "path": "Validation/material_model_results.log",
+      "bytes": 4310,
+      "sha256": "ff3156700076c1dfaf54dfcbd51c3efc5f163402aabfc7da3dc0e78b456cd5fe"
+    },
+    {
+      "path": "Validation/model_results.json",
+      "bytes": 1405,
+      "sha256": "b1bcebe90b00121892bbe3c094ef7f087ab60df4c91d63b40ec99d28ce9390ec"
+    },
+    {
+      "path": "Validation/original_meta_sha256.json",
+      "bytes": 927,
+      "sha256": "69fa86bfb486511796c43fc7513c8eaf6ec523d42ba5ace4cb03db877589949b"
+    },
+    {
+      "path": "Validation/project_configuration.json",
+      "bytes": 2910,
+      "sha256": "ccd17a8197d00ba12231598f14af8d10229ddef3b0dcf108add93e965681ab49"
+    },
+    {
+      "path": "Validation/requirements.txt",
+      "bytes": 28,
+      "sha256": "60981685846ae3ebada76fe35d249d04926d8f3db7f5865d1bd68e5455c14fae"
+    },
+    {
+      "path": "Validation/validate_materials.py",
+      "bytes": 18502,
+      "sha256": "1779bdd10df6a80d882e8387ecf237ca629b7f7a2cb8f72d05b0cdae1022dfc5"
+    },
+    {
+      "path": "Validation/validate_models.py",
+      "bytes": 13947,
+      "sha256": "458d5c3a93f0af96d2da31557f9b59d041861dab5f530cbe9b82c264f7623eb9"
+    }
+  ]
+}

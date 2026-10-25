@@ -1,0 +1,83 @@
+{
+  "validation_kind": "Portable Python algorithm models and static source/Unity-YAML checks; NOT C# or Unity execution",
+  "groups_passed": 16,
+  "groups": [
+    "Four stable material/item IDs, reserved Air=0 and positive configured yields",
+    "1800 seeded global-cell queries are order-independent; all ores occur; seed changes deposits",
+    "Unity test fixtures: rare-ore overlap priority, zero chance and vertical limits",
+    "500 negative/chunk-boundary round trips retain global ore identity",
+    "5000 fixed-point deposit membership comparisons against geometric oracle",
+    "All 256 air/surface/solid corner states and negative point interpolation",
+    "4000 accounting transitions conserve resource value without double-crediting debris",
+    "Fractional/negative/mixed resource buckets, moving piles and exactly-once consumption model",
+    "Save snapshots and disconnect spill conserve inventory plus uncollected value",
+    "Save binary field sizes/checksum corruption model and atomic-replace/backup source paths",
+    "Unity YAML parses without duplicate keys or missing local components/parents",
+    "No duplicate asset GUIDs; all new resource references resolve; all three Mirror asset IDs match",
+    "Debris server authority, owner-only inventory, pickup body/trigger and scene registrations",
+    "Owned mining, server raycasts/cooldown, pickup distance/walls and contiguous late-join source paths",
+    "C# lexical delimiters/error tokens and editor-only boundaries (not compilation)",
+    "All eight starter materials reference the URP shader and correct world/object projection"
+  ],
+  "details": {
+    "sample_material_counts_1800": {
+      "1": 1744,
+      "2": 38,
+      "3": 11,
+      "4": 7
+    },
+    "unity_overlap_fixture_matches": 2,
+    "unity_yaml_documents_checked": 26,
+    "unique_game_asset_guids": 100,
+    "csharp_files_lexically_checked": 46,
+    "provided_unity_regression_groups": 56,
+    "seed_1729_example_deposit_centres": {
+      "2": {
+        "cell": [
+          -5,
+          38,
+          -17
+        ],
+        "world_metres": [
+          -1.125,
+          9.625,
+          -4.125
+        ]
+      },
+      "3": {
+        "cell": [
+          6,
+          -27,
+          27
+        ],
+        "world_metres": [
+          1.625,
+          -6.625,
+          6.875
+        ]
+      },
+      "4": {
+        "cell": [
+          48,
+          -6,
+          1
+        ],
+        "world_metres": [
+          12.125,
+          -1.375,
+          0.375
+        ]
+      }
+    }
+  },
+  "seconds": 1.09,
+  "not_tested": [
+    "C# compilation and Mirror Weaver",
+    "Shader compilation and graphics appearance",
+    "Unity editor regression execution",
+    "Physics/play-mode behaviour",
+    "Live host/client/dedicated server/late join",
+    "Actual platform filesystem replacement",
+    "Frame-time/network/memory profiling"
+  ]
+}

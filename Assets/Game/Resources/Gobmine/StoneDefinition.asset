@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 847bf611698b5079b3fd4d479e6a6253, type: 3}
+  m_Name: Stone
+  m_EditorClassIdentifier: Assembly-CSharp::TerrainMaterialDefinition
+  materialId: 1
+  displayName: Stone
+  surfaceMaterial: {fileID: 2100000, guid: 5340dba3c20b5573a51d92c9638e945e, type: 2}
+  debrisMaterial: {fileID: 2100000, guid: 61cb8ece895a53e185334c3df7d9e0b6, type: 2}
+  hardness: 1
+  inventoryItem: {fileID: 11400000, guid: 4c49758d62b457e49fd82abd13b5e1ff, type: 2}
+  itemsPerCubicMetre: 8
+  generateDeposits: 0
+  depositGridSizeInCells: 48
+  depositChancePerThousand: 0
+  minimumRadiusInCells: 4
+  maximumRadiusInCells: 9
+  minimumCellY: -100000
+  maximumCellY: 100000
