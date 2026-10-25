@@ -11,6 +11,11 @@ public sealed class TerrainDensityStore
 {
     public readonly Vector3Int ChunkSize;
     public readonly float VoxelSize;
+    // Base rock noise depends on X/Z only. Cache it instead of recomputing Perlin
+    // for every Y, volume corner, structural query and chunk rebuild.
+    private readonly Dictionary<Vector2Int, float> _baseRockColumns = new Dictionary<Vector2Int, float>();
+    private readonly Queue<Vector2Int> _baseRockOrder = new Queue<Vector2Int>();
+    private const int BaseRockCacheCapacity = 32768;
     private readonly Dictionary<Vector3Int, float> _overrides = new Dictionary<Vector3Int, float>();
     private readonly HashSet<Vector3Int> _modifiedChunks = new HashSet<Vector3Int>();
     private readonly Dictionary<Vector3Int, Vector2Int> _airXExtents = new Dictionary<Vector3Int, Vector2Int>();
@@ -36,7 +41,14 @@ public sealed class TerrainDensityStore
     {
         Vector3 w = (Vector3)p * VoxelSize;
         bool room = w.x >= -12f && w.x <= 12f && w.y >= -4f && w.y <= 8f && w.z >= -12f && w.z <= 12f;
-        return room ? 5f : -5f - Mathf.PerlinNoise(w.x * 0.1f, w.z * 0.1f) * 2f;
+        if (room) return 5f;
+        Vector2Int key = new Vector2Int(p.x, p.z);
+        float rock;
+        if (_baseRockColumns.TryGetValue(key, out rock)) return rock;
+        rock = -5f - Mathf.PerlinNoise(w.x * 0.1f, w.z * 0.1f) * 2f;
+        if (_baseRockColumns.Count >= BaseRockCacheCapacity) _baseRockColumns.Remove(_baseRockOrder.Dequeue());
+        _baseRockColumns.Add(key, rock); _baseRockOrder.Enqueue(key);
+        return rock;
     }
 
     public float Get(Vector3Int p)

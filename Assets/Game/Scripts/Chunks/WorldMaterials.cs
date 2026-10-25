@@ -92,7 +92,7 @@ public partial class World
         foreach(var pair in _resourceViews)
             if(pair.Value!=null) { if(NetworkServer.active)NetworkServer.Destroy(pair.Value.gameObject);else Destroy(pair.Value.gameObject); }
         _resourceViews.Clear();_inventories.Clear();_resourcePiles=null;_materials=null;
-        _materialWorldValid=false;_worldRulesSignature=null;_nextResourceRefresh=0f;_materialCache.Clear();
+        _materialWorldValid=false;_worldRulesSignature=null;_nextResourceRefresh=0f;_materialCache.Clear();_miningRewardBatch.Clear();
     }
     public int GetSolidMaterialId(Vector3Int cell)
     {
@@ -126,14 +126,42 @@ public partial class World
         }
         return hardness; // Conservative hardest-touching-cell rule at interfaces.
     }
+    private struct BatchedMiningReward
+    {
+        public int MaterialId, ItemId;
+        public double Units;
+        public Vector3 Moment;
+    }
+    private readonly Dictionary<int, BatchedMiningReward> _miningRewardBatch = new Dictionary<int, BatchedMiningReward>();
+    private void BeginRemovalRewardBatch() => _miningRewardBatch.Clear();
+    private void FlushRemovalRewardBatch(PlayerInventory miner)
+    {
+        // One inventory write per material per commit, rather than one per cell.
+        // This retains fractions and avoids hundreds of SyncDictionary operations.
+        foreach (BatchedMiningReward reward in _miningRewardBatch.Values)
+        {
+            if (miner != null && miner.isServer && miner.ServerAddUnits(reward.ItemId, reward.Units)) continue;
+            _resourcePiles.Add(reward.MaterialId, reward.ItemId, reward.Units, reward.Moment / (float)reward.Units);
+        }
+        _miningRewardBatch.Clear();
+    }
     private void RewardRemoval(Vector3Int cell,Vector3 centre,float cubicMetres,bool collapse,PlayerInventory miner)
     {
         int id=GetSolidMaterialId(cell);
         var d=materialCatalog.Get(id);
-        QueueDebris(cell,centre,cubicMetres,id);
+        QueueDebris(cell,centre,cubicMetres,id,collapse);
+        if(collapse) QueueCollapseHazard(cell,centre,cubicMetres);
         if(d==null || d.inventoryItem==null || d.itemsPerCubicMetre<=0)return;
         double units=cubicMetres*d.itemsPerCubicMetre;
-        if(!collapse && miner!=null && miner.isServer && miner.ServerAddUnits(d.inventoryItem.mineralID,units))return;
+        if(!collapse && miner!=null && miner.isServer)
+        {
+            BatchedMiningReward reward;
+            _miningRewardBatch.TryGetValue(id, out reward);
+            reward.MaterialId=id; reward.ItemId=d.inventoryItem.mineralID;
+            reward.Units+=units; reward.Moment+=centre*(float)units;
+            _miningRewardBatch[id]=reward;
+            return;
+        }
         _resourcePiles.Add(id,d.inventoryItem.mineralID,units,centre);
         // A disconnected miner does not cause queued edits to destroy their rewards.
     }
@@ -157,19 +185,120 @@ public partial class World
     {
         if(isServer && _resourcePiles!=null)_resourcePiles.UpdatePosition(id,position);
     }
-    public bool TryCollectResource(long id,PlayerInventory inventory)
+    private RaycastHit[] _resourceCollectionHits = new RaycastHit[32];
+
+    // Called by the server pickup view on a staggered interval. Trigger contact and
+    // the project's layer collision matrix are no longer required for collection.
+    public bool TryCollectNearbyResource(long id)
     {
-        if(!isServer || !IsReady || inventory==null || !inventory.isServer || _resourcePiles==null)return false;
+        if (!isServer || !IsReady || _resourcePiles == null) return false;
+        foreach (PlayerInventory inventory in _inventories)
+            if (inventory != null && TryCollectResource(id, inventory)) return true;
+        return false;
+    }
+
+    public bool TryCollectResource(long id, PlayerInventory inventory)
+    {
+        if (!isServer || !IsReady || _resourcePiles == null) return false;
         ResourcePileStore.Pile pile;
-        if(!_resourcePiles.TryGet(id,out pile) || Vector3.Distance(inventory.transform.position,pile.Position)>resourcePickupReach)return false;
-        Vector3 eye=inventory.transform.position+Vector3.up*0.6f;
-        if(Physics.Linecast(eye,pile.Position,1<<terrainLayer,QueryTriggerInteraction.Ignore))return false;
-        if(!inventory.ServerAddUnits(pile.ItemId,pile.Units))return false;
-        // Main-thread operation: removal follows successful credit with no yield/await.
-        _resourcePiles.Remove(id,out pile);
+        if (!_resourcePiles.TryGet(id, out pile)) return false;
         OrePickup view;
-        if(_resourceViews.TryGetValue(id,out view)) {if(view!=null)NetworkServer.Destroy(view.gameObject);_resourceViews.Remove(id);}
+        if (_resourceViews.TryGetValue(id, out view) && view != null)
+        {
+            // Use the server's latest physical position, not a previous fixed tick.
+            if (!ResourcePickupRules.IsFinite(view.transform.position)) return false;
+            pile.Position = view.transform.position;
+            _resourcePiles.UpdatePosition(id, pile.Position);
+        }
+        if (GetResourcePickupAccess(pile, inventory) != ResourcePickupAccess.Reachable) return false;
+        if (!inventory.ServerAddUnits(pile.ItemId, pile.Units)) return false;
+        // Main-thread transaction: successful credit followed by removal, no await/yield.
+        // Subsequent players/trigger callbacks cannot collect this record a second time.
+        _resourcePiles.Remove(id, out pile);
+        if (_resourceViews.TryGetValue(id, out view))
+        {
+            if (view != null) NetworkServer.Destroy(view.gameObject);
+            _resourceViews.Remove(id);
+        }
         return true;
+    }
+
+    private ResourcePickupAccess GetResourcePickupAccess(ResourcePileStore.Pile pile, PlayerInventory inventory)
+    {
+        if (!isServer || !IsReady || _terrain == null || inventory == null ||
+            !inventory.isServer || !inventory.isActiveAndEnabled || !ResourcePickupRules.IsFinite(pile.Position))
+            return ResourcePickupAccess.Invalid;
+        GobminePlayerHealth health = inventory.GetComponent<GobminePlayerHealth>();
+        if (health != null && health.IsDead) return ResourcePickupAccess.PlayerDown;
+        if (!ResourcePickupRules.WithinReach(inventory.transform.position, pile.Position, resourcePickupReach))
+            return ResourcePickupAccess.TooFar;
+        // Raycasts alone cannot determine whether an endpoint is inside solid terrain.
+        // A buried resource is retained; do not move it through a wall or award it anyway.
+        if (!IsAirAt(pile.Position)) return ResourcePickupAccess.BuriedInTerrain;
+
+        Collider body = inventory.GetComponent<Collider>();
+        Vector3 centre = inventory.transform.position + Vector3.up * 0.2f;
+        Vector3 upper = inventory.transform.position + Vector3.up * 0.6f;
+        if (body != null && body.enabled && !body.isTrigger)
+        {
+            Bounds bounds = body.bounds;
+            centre = bounds.center;
+            upper = centre + Vector3.up * Mathf.Min(0.6f, bounds.extents.y * 0.5f);
+        }
+        bool waiting;
+        if (HasResourceCollectionPath(upper, pile.Position, out waiting)) return ResourcePickupAccess.Reachable;
+        bool lowerWaiting;
+        if (HasResourceCollectionPath(centre, pile.Position, out lowerWaiting)) return ResourcePickupAccess.Reachable;
+        return waiting || lowerWaiting ? ResourcePickupAccess.TerrainUpdating : ResourcePickupAccess.SolidObstacle;
+    }
+
+    private bool HasResourceCollectionPath(Vector3 from, Vector3 to, out bool waiting)
+    {
+        waiting = false;
+        if (!ResourcePickupRules.IsFinite(from) || !IsAirAt(from)) return false;
+        // A missing, sleeping or dirty collision mesh is NOT an opening. Check the
+        // small chunk box enclosing this short path before trusting physical hits.
+        // This is deliberately conservative at corners; it retries next interval.
+        Vector3Int low = GetChunkCoordFromPosition(Vector3.Min(from, to));
+        Vector3Int high = GetChunkCoordFromPosition(Vector3.Max(from, to));
+        long cells = ((long)high.x - low.x + 1) * ((long)high.y - low.y + 1) * ((long)high.z - low.z + 1);
+        if (cells <= 0 || cells > 64) { waiting = true; return false; }
+        for (int x = low.x; x <= high.x; x++)
+        for (int y = low.y; y <= high.y; y++)
+        for (int z = low.z; z <= high.z; z++)
+        {
+            Vector3Int coord = new Vector3Int(x, y, z);
+            Chunk chunk;
+            if (!_activeChunks.TryGetValue(coord, out chunk) || chunk == null ||
+                !chunk.gameObject.activeInHierarchy || _dirtyMeshes.Contains(coord))
+            { waiting = true; return false; }
+            MeshCollider collider = chunk.GetComponent<MeshCollider>();
+            if (collider == null || !collider.enabled) { waiting = true; return false; }
+        }
+        return !ResourcePickupRules.HasSolidObstacle(gameObject.scene.GetPhysicsScene(), from, to, ref _resourceCollectionHits);
+    }
+
+    // Read-only runtime diagnostic. Does not collect, delete, or move any resources.
+    public string DescribeNearbyResourcePickups()
+    {
+        if (!isServer || !IsReady || _resourcePiles == null) return "[Gobmine Pickups] Start a ready host/server first.";
+        var text = new System.Text.StringBuilder();
+        text.AppendLine($"[Gobmine Pickups] Reach={resourcePickupReach:0.00}m; visible={_resourceViews.Count}; stored={_resourcePiles.Count}; players={_inventories.Count}");
+        int shown = 0;
+        foreach (var entry in _resourceViews)
+        {
+            ResourcePileStore.Pile pile;
+            if (entry.Value == null || !_resourcePiles.TryGet(entry.Key, out pile)) continue;
+            pile.Position = entry.Value.transform.position;
+            foreach (PlayerInventory inventory in _inventories)
+            {
+                if (inventory == null || Vector3.Distance(inventory.transform.position, pile.Position) > Mathf.Max(8f, resourcePickupReach + 2f)) continue;
+                text.AppendLine($"Pile {pile.Id}; material={pile.MaterialId}; units={pile.Units:0.###}; position={pile.Position}; player={inventory.netId}; distance={Vector3.Distance(inventory.transform.position, pile.Position):0.00}m; status={GetResourcePickupAccess(pile, inventory)}");
+                if (++shown >= 24) return text.AppendLine("Report limited to 24 nearby player/pile pairs.").ToString();
+            }
+        }
+        if (shown == 0) text.AppendLine("No visible pickup views near registered players. Stored records can exceed the visible view limit.");
+        return text.ToString();
     }
     private void UpdateMaterialWorld()
     {

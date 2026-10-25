@@ -11,6 +11,8 @@ public static class MiningServerValidation
         if(!tool.isServer || !tool.enabled || world==null || !world.CanMine || tool.connectionToClient==null ||
             tool.connectionToClient.identity!=tool.netIdentity || !Finite(direction.x)||!Finite(direction.y)||!Finite(direction.z))return;
         if(direction.sqrMagnitude<0.25f || direction.sqrMagnitude>4f)return;
+        var health=tool.GetComponent<GobminePlayerHealth>();
+        if(health!=null && health.IsDead)return;
         var inventory=tool.GetComponent<PlayerInventory>();
         if(inventory==null || Time.unscaledTime<inventory.NextServerMiningTime)return;
         float cooldown=Mathf.Clamp(interval,0.03f,2f);

@@ -13,13 +13,14 @@ GameObject:
   - component: {fileID: 8754851603864138770}
   - component: {fileID: 4919717244970157342}
   - component: {fileID: 6993965989243769589}
-  - component: {fileID: 1203129597738578255}
   - component: {fileID: 2437441754224893008}
   - component: {fileID: 254574501787671070}
   - component: {fileID: 2792759908680420803}
   - component: {fileID: 6584422871054830895}
   - component: {fileID: 91430049665917339}
   - component: {fileID: 88000301}
+  - component: {fileID: 2105160015912903593}
+  - component: {fileID: 8741376857855149690}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -135,29 +136,6 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
---- !u!136 &1203129597738578255
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 281334614785011032}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Height: 2
-  m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &2437441754224893008
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -233,10 +211,22 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   moveSpeed: 5
+  jumpHeight: 1.1
+  gravity: -24
+  terminalFallSpeed: 25
+  jumpBufferSeconds: 0.12
+  coyoteSeconds: 0.1
+  groundSnapDistance: 0.15
+  maximumMotorDeltaTime: 0.05
+  inputActions: {fileID: -944628639613478452, guid: 1a4911f71258f9c49a819a3cd92322a8, type: 3}
+  useJumpFallback: 1
   lookSensitivity: 0.2
+  gamepadLookDegreesPerSecond: 150
   cameraPivot: {fileID: 8284284132156537274}
   localCamera: {fileID: 4321309597486537069}
   localCinemachine: {fileID: 2252357383268679068}
+  guardTerrainStreaming: 1
+  rollbackSolidPenetration: 1
 --- !u!114 &91430049665917339
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -271,6 +261,61 @@ MonoBehaviour:
   rotationSensitivity: 0.01
   positionPrecision: 0.01
   scalePrecision: 0.01
+--- !u!114 &88000301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 281334614785011032}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbffbd8d9a9458e2a70e3c051f977340, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MiningInventoryHUD
+  showHUD: 1
+--- !u!114 &2105160015912903593
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 281334614785011032}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0be06b9297b356b7b31c1357508e3145, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GobminePlayerHealth
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  maximumHealth: 100
+  showHealthHUD: 1
+--- !u!143 &8741376857855149690
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 281334614785011032}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Height: 2
+  m_Radius: 0.5
+  m_SlopeLimit: 50
+  m_StepOffset: 0.3
+  m_SkinWidth: 0.05
+  m_MinMoveDistance: 0
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1121659096224603369
 GameObject:
   m_ObjectHideFlags: 0
@@ -549,16 +594,3 @@ MonoBehaviour:
       m_PostInfinity: 2
       m_RotationOrder: 4
   CustomBlends: {fileID: 0}
---- !u!114 &88000301
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 281334614785011032}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fbffbd8d9a9458e2a70e3c051f977340, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MiningInventoryHUD
-  showHUD: 1

@@ -27,13 +27,24 @@ public partial class World : NetworkBehaviour
     [Min(1)] public int chunkBuildsPerFrame = 2;
 
     [Header("Structural Rules")]
-    [Tooltip("Maximum vertical rock thickness that collapses, in voxel spacings. 2 at 0.25m = 0.5m. Zero disables only thin-roof checks.")]
-    [UnityEngine.Range(0, 16)] public int minCeilingThickness = 2;
+    // Retained for old scenes and Editor tools. New roof rule uses metres below.
+    [HideInInspector] public int minCeilingThickness = 2;
     [HideInInspector] public int maxCollapseVolume = 150000; // Legacy field; NEVER used as a support/size cutoff.
     [Min(1)] public int structuralOperationsPerFrame = 4096;
     [Min(0.1f)] public float structuralMillisecondsPerFrame = 3f;
-    [UnityEngine.Range(1, 512)] public int densityChangesPerFrame = 128;
+    [Tooltip("Maximum samples per frame, shared fairly between direct mining and collapse. Time budgets can stop sooner.")]
+    [UnityEngine.Range(1, 8192)] public int densityChangesPerFrame = 1024;
     [Min(1)] public int meshRebuildsPerFrame = 4;
+
+    [Header("Performance budgets")]
+    [Tooltip("Soft limit checked between atomic removal batches. One small collapse batch is allowed to ensure progress.")]
+    [Min(0.1f)] public float removalMillisecondsPerFrame = 3f;
+    [Tooltip("Atomic batch size. Large values increase the worst-case frame spike.")]
+    [UnityEngine.Range(16, 128)] public int removalBatchSize = 64;
+    [Tooltip("Soft limit checked between complete mesh/collider rebuilds. One rebuild can exceed this value.")]
+    [Min(0.1f)] public float meshMillisecondsPerFrame = 3f;
+    [Tooltip("Reject additional, not-yet-applied mining requests when a player's pending queue is full. No terrain or rewards are changed for rejected requests.")]
+    [UnityEngine.Range(1, 32)] public int maxQueuedMiningRequestsPerPlayer = 4;
 
     [Header("Mining Validation")]
     public bool requireExploringToMine = true;
@@ -44,14 +55,24 @@ public partial class World : NetworkBehaviour
     [Header("Debris")]
     [Tooltip("Material in each spatial bucket is combined into rubble. This is NOT exact mesh fracture.")]
     [UnityEngine.Range(1, 4)] public int debrisBucketSizeInCells = 2;
-    [Min(1)] public int debrisSpawnsPerFrame = 8;
+    [Min(1)] public int debrisSpawnsPerFrame = 4;
+    [Tooltip("Briefly combine adjacent removal batches before emitting rubble. Inventory rewards do not wait for this.")]
+    [UnityEngine.Range(0f, 0.25f)] public float debrisBatchDelaySeconds = 0.06f;
 
     public bool IsReady { get; private set; }
     public bool CanMine => IsReady && (!requireExploringToMine || GameManager.Instance == null ||
         GameManager.Instance.currentGameState == GameState.Exploring);
-    public int PendingDebrisBuckets => _debrisOrder.Count;
+    public int PendingDebrisBuckets => _openRubble.Count + _readyMiningRubble.Count + _readyCollapseRubble.Count;
     public bool HasPendingStructuralWork => _solver != null || _structuralChanges.Count > 0 ||
-        _collapseQueue.Count > 0 || (_work != null && _work.IsCollapse);
+        _collapseQueue.Count > 0 || _collapseWork != null || _ceilingWork != null || _ceilingQueue.Count > 0 ||
+        (_ceilingScanner != null && _ceilingScanner.HasPending);
+    public int PendingMiningRequests => _edits.Count + (_miningWork != null ? 1 : 0);
+    public int PendingMeshRebuilds => _dirtyMeshes.Count;
+    public int ActiveChunkCount => _activeChunks.Count;
+    public int PendingChunkBuilds => _chunksToGenerate.Count;
+    public int RejectedMiningRequests { get; private set; }
+    public float LastRemovalMilliseconds { get; private set; }
+    public float LastMeshMilliseconds { get; private set; }
 
     private TerrainDensityStore _terrain;
     private Func<Vector3Int, float> _densityReader;
@@ -69,11 +90,25 @@ public partial class World : NetworkBehaviour
     private readonly TerrainVolume _volume = new TerrainVolume();
     private readonly Queue<PendingEdit> _edits = new Queue<PendingEdit>();
     private Coroutine _chunkRoutine;
-    private RemovalWork _work;
+    private RemovalWork _miningWork, _collapseWork;
+    private bool _singleSampleCollapseTurn;
+    private readonly List<DensityChange> _commitChanges = new List<DensityChange>(128);
+    private readonly HashSet<Vector3Int> _commitCells = new HashSet<Vector3Int>();
+    private readonly Dictionary<Vector3Int, TerrainVolume.Measure> _beforeCellMeasures = new Dictionary<Vector3Int, TerrainVolume.Measure>();
+    private readonly System.Diagnostics.Stopwatch _removalWatch = new System.Diagnostics.Stopwatch();
+    private readonly System.Diagnostics.Stopwatch _meshWatch = new System.Diagnostics.Stopwatch();
+    private readonly System.Diagnostics.Stopwatch _structureWatch = new System.Diagnostics.Stopwatch();
+    private static readonly Unity.Profiling.ProfilerMarker RemovalMarker = new Unity.Profiling.ProfilerMarker("Gobmine.Removal");
+    private static readonly Unity.Profiling.ProfilerMarker StructureMarker = new Unity.Profiling.ProfilerMarker("Gobmine.Structure");
+    private static readonly Unity.Profiling.ProfilerMarker MeshMarker = new Unity.Profiling.ProfilerMarker("Gobmine.MeshAndCollider");
+    private static readonly Unity.Profiling.ProfilerMarker DebrisMarker = new Unity.Profiling.ProfilerMarker("Gobmine.DebrisSpawn");
+    private static readonly Unity.Profiling.ProfilerMarker ResourcesMarker = new Unity.Profiling.ProfilerMarker("Gobmine.ResourcesAndSave");
+    private static readonly Unity.Profiling.ProfilerMarker StreamingMarker = new Unity.Profiling.ProfilerMarker("Gobmine.ChunkStreaming");
+    private readonly List<Vector3Int> _lastStreamingCenters = new List<Vector3Int>();
+    private int _lastStreamingView = -1, _lastStreamingSleep = -1, _lastStreamingTop;
     private long _revision;
     private bool _savedOnStop;
     private bool _warnedDebris;
-    private bool _warnedBacklog;
     private int _collapseEffectCount;
     private Vector3 _collapseEffectMoment;
     private float _nextCollapseEffectTime;
@@ -89,22 +124,6 @@ public partial class World : NetworkBehaviour
         public bool IsCollapse;
         public PlayerInventory Miner;
     }
-    private struct DebrisKey : IEquatable<DebrisKey>
-    {
-        public Vector3Int Cell; public int MaterialId;
-        public bool Equals(DebrisKey other) => Cell == other.Cell && MaterialId == other.MaterialId;
-        public override bool Equals(object obj) => obj is DebrisKey && Equals((DebrisKey)obj);
-        public override int GetHashCode() { unchecked { return Cell.GetHashCode() * 397 ^ MaterialId; } }
-    }
-    private struct DebrisBatch
-    {
-        public float Volume;
-        public Vector3 Moment;
-        public HashSet<Vector3Int> RequiredChunks;
-    }
-    private readonly Dictionary<DebrisKey, DebrisBatch> _debris = new Dictionary<DebrisKey, DebrisBatch>();
-    private readonly Queue<DebrisKey> _debrisOrder = new Queue<DebrisKey>();
-
     // Reliable, revisioned late-join synchronization. Live deltas are retained while
     // a frozen baseline is streamed, then replayed after that baseline.
     private struct Delta { public long Revision; public Vector3Int[] Positions; public float[] Values; }
@@ -142,7 +161,12 @@ public partial class World : NetworkBehaviour
         if (!InitializeMaterialWorld()) return;
         foreach (Transform player in _connectedPlayers)
             if (player != null) RegisterInventory(player.GetComponent<PlayerInventory>());
-        foreach (var entry in _terrain.CopyOverrides()) _structuralChanges.Add(entry.Key);
+        InitializeCeilingScanner();
+        foreach (var entry in _terrain.CopyOverrides())
+        {
+            if (entry.Value >= 0f) _structuralChanges.Add(entry.Key);
+            NotifyCeilingChange(entry.Key, false);
+        }
         _savedOnStop = false;
         StartWorldGeneration(); // A dedicated server also needs its own colliders.
     }
@@ -150,6 +174,7 @@ public partial class World : NetworkBehaviour
     public override void OnStartClient()
     {
         base.OnStartClient();
+        if (DebrisPool.Instance != null) DebrisPool.Instance.EnsureClientPoolRegistered();
         if (resourcePickupPrefab == null) resourcePickupPrefab = Resources.Load<GameObject>("Gobmine/OrePickup");
         if (resourcePickupPrefab != null)
         {
@@ -183,12 +208,16 @@ public partial class World : NetworkBehaviour
         _activeChunks.Clear(); _sleepingChunks.Clear();
         _chunksToGenerate.Clear(); _generationQueued.Clear(); _dirtyMeshes.Clear(); _dirtyMeshOrder.Clear();
         _structuralChanges.Clear(); _collapseQueue.Clear(); _edits.Clear();
-        _debris.Clear(); _debrisOrder.Clear(); _bufferedDeltas.Clear();
+        ResetRubbleRuntime(); ResetCaveInRuntime(); _bufferedDeltas.Clear();
         _syncingConnections.Clear();
-        _work = null; _solver = null; _terrain = null; _densityReader = null;
+        _miningWork = null; _collapseWork = null; _solver = null; _terrain = null; _densityReader = null;
+        _singleSampleCollapseTurn = false;
+        _commitChanges.Clear(); _commitCells.Clear(); _beforeCellMeasures.Clear();
+        _lastStreamingCenters.Clear(); _lastStreamingView = -1; _lastStreamingSleep = -1;
+        RejectedMiningRequests = 0; LastRemovalMilliseconds = 0f; LastMeshMilliseconds = 0f;
         _revision = 0; _lastClientRevision = 0;
         _receivingSnapshot = false; _snapshotRequested = false;
-        _warnedBacklog = false; _warnedDebris = false;
+        _warnedDebris = false;
         _collapseEffectCount = 0; _collapseEffectMoment = Vector3.zero; _nextCollapseEffectTime = 0f;
         IsReady = false;
     }
@@ -211,14 +240,19 @@ public partial class World : NetworkBehaviour
         {
             // Accepted edits and cascades finish even if the game leaves Exploring.
             // The game-state gate applies when accepting NEW mining requests only.
-            ProcessRemovalWork();
-            RunStructuralBudget();
+            using (RemovalMarker.Auto()) ProcessRemovalWork();
+            using (StructureMarker.Auto()) RunStructuralBudget();
             EmitCollapseEffects();
         }
-        FlushDirtyMeshes();
+        using (MeshMarker.Auto()) FlushDirtyMeshes();
         // Each rubble bucket waits only for its OWN collision views, not for every
         // dirty chunk in a busy multiplayer world. Distant buckets cannot block it.
-        if (isServer) { FlushDebris(); UpdateMaterialWorld(); }
+        if (isServer)
+        {
+            UpdateCollapseDamage();
+            using (DebrisMarker.Auto()) FlushDebris();
+            using (ResourcesMarker.Auto()) UpdateMaterialWorld();
+        }
     }
 
     // Trusted server-side compatibility API. Clients must use an owned mining tool,
@@ -239,7 +273,11 @@ public partial class World : NetworkBehaviour
     private void QueueMining(Vector3 point, float radius, float amount, PlayerInventory miner)
     {
         if (!Finite(point) || !Finite(radius) || !Finite(amount) || radius <= 0f || amount <= 0f) return;
-        if (_edits.Count >= 256) return;
+        if (_edits.Count >= 256) { RejectedMiningRequests++; return; }
+        int queuedForMiner = _miningWork != null && _miningWork.Miner == miner ? 1 : 0;
+        foreach (PendingEdit pending in _edits) if (pending.Miner == miner) queuedForMiner++;
+        if (queuedForMiner >= Mathf.Max(1, maxQueuedMiningRequestsPerPlayer))
+        { RejectedMiningRequests++; return; }
         _edits.Enqueue(new PendingEdit {
             Point = point, Radius = Mathf.Min(radius, maxMineRadius), Amount = Mathf.Min(amount, maxMineAmount), Miner = miner
         });
@@ -269,25 +307,78 @@ public partial class World : NetworkBehaviour
         return changes;
     }
 
+    // Split count allowance without letting a huge collapse monopolize direct mining.
+    // The one-sample setting alternates frames when both lanes are busy.
+    private static Vector2Int SplitRemovalBudget(int total, bool mining, bool collapse, bool collapseTurn)
+    {
+        total = Mathf.Clamp(total, 1, 8192);
+        if (!mining) return new Vector2Int(0, collapse ? total : 0);
+        if (!collapse) return new Vector2Int(total, 0);
+        if (total == 1) return collapseTurn ? new Vector2Int(0, 1) : new Vector2Int(1, 0);
+        int reserve = Mathf.Max(1, total / 4);
+        return new Vector2Int(total - reserve, reserve);
+    }
+
     private void ProcessRemovalWork()
     {
-        int remaining = Mathf.Clamp(densityChangesPerFrame, 1, 512);
-        int workItems = 0;
-        while (remaining > 0 && workItems++ < 32)
+        _removalWatch.Restart();
+        bool mining = _miningWork != null || _edits.Count > 0;
+        bool collapse = _collapseWork != null || _collapseQueue.Count > 0 || _ceilingWork != null || _ceilingQueue.Count > 0 ||
+            (_ceilingScanner != null && _ceilingScanner.HasPending);
+        Vector2Int allowance = SplitRemovalBudget(densityChangesPerFrame, mining, collapse, _singleSampleCollapseTurn);
+        _singleSampleCollapseTurn = !_singleSampleCollapseTurn;
+        int mined = ProcessRemovalLane(ref _miningWork, false, allowance.x);
+        // Roof checks run even when an island search/removal is busy. Their
+        // own time budget is measured separately from density/volume work.
+        _removalWatch.Stop();
+        RunCeilingBudget();
+        _removalWatch.Start();
+        int remaining = allowance.y + allowance.x - mined;
+        bool hasRoof = _ceilingWork != null || _ceilingQueue.Count > 0;
+        bool hasIsland = _collapseWork != null || _collapseQueue.Count > 0;
+        int roofAllowance = SplitCeilingQuota(remaining, hasRoof, hasIsland, _singleSampleRoofTurn);
+        if (remaining == 1 && hasRoof && hasIsland) _singleSampleRoofTurn = !_singleSampleRoofTurn;
+        int roofUsed = ProcessRemovalLane(ref _ceilingWork, true, roofAllowance, true);
+        ProcessRemovalLane(ref _collapseWork, true, remaining - roofUsed);
+        LastRemovalMilliseconds = (float)_removalWatch.Elapsed.TotalMilliseconds;
+    }
+
+    private int ProcessRemovalLane(ref RemovalWork work, bool collapse, int allowance, bool ceiling = false)
+    {
+        int used = 0, items = 0;
+        bool committed = false;
+        // Every busy lane may make one atomic batch even when the soft time budget
+        // has expired. This prevents starvation. It is not a hard frame-time cap.
+        while (used < allowance && items++ < 32)
         {
-            if (_work == null && _collapseQueue.Count > 0)
-                _work = new RemovalWork { CollapseSamples = _collapseQueue.Dequeue(), IsCollapse = true };
-            if (_work == null && _edits.Count > 0)
+            if ((committed || items > 1) && _removalWatch.Elapsed.TotalMilliseconds >= Mathf.Max(0.1f, removalMillisecondsPerFrame)) break;
+            if (work == null)
             {
-                PendingEdit edit = _edits.Dequeue();
-                _work = new RemovalWork { Changes = BuildBrush(edit), Miner = edit.Miner };
+                if (collapse)
+                {
+                    Queue<List<Vector3Int>> queue = ceiling ? _ceilingQueue : _collapseQueue;
+                    if (queue.Count == 0) break;
+                    work = new RemovalWork { CollapseSamples = queue.Dequeue(), IsCollapse = true };
+                }
+                else
+                {
+                    if (_edits.Count == 0) break;
+                    PendingEdit edit = _edits.Dequeue();
+                    work = new RemovalWork { Changes = BuildBrush(edit), Miner = edit.Miner };
+                }
             }
-            if (_work == null) return;
-            int count = Mathf.Min(remaining, _work.Count - _work.Cursor);
-            if (count > 0) { CommitChanges(_work, count); remaining -= count; }
-            if (_work.Cursor < _work.Count) return;
-            _work = null;
+            int batch = Mathf.Clamp(removalBatchSize, 16, 128);
+            if (collapse && _removalWatch.Elapsed.TotalMilliseconds >= Mathf.Max(0.1f, removalMillisecondsPerFrame)) batch = Mathf.Min(batch, 16);
+            int count = Mathf.Min(batch, Mathf.Min(allowance - used, work.Count - work.Cursor));
+            if (count > 0)
+            {
+                CommitChanges(work, count);
+                used += count;
+                committed = true;
+            }
+            if (work.Cursor >= work.Count) work = null;
         }
+        return used;
     }
 
     private void EmitCollapseEffects()
@@ -302,8 +393,9 @@ public partial class World : NetworkBehaviour
 
     private void CommitChanges(RemovalWork work, int requestedCount)
     {
-        var changes = new List<DensityChange>();
-        var cells = new HashSet<Vector3Int>();
+        List<DensityChange> changes = _commitChanges;
+        HashSet<Vector3Int> cells = _commitCells;
+        changes.Clear(); cells.Clear();
         int end = work.Cursor + requestedCount;
         for (; work.Cursor < end; work.Cursor++)
         {
@@ -319,7 +411,8 @@ public partial class World : NetworkBehaviour
                         cells.Add(change.Position - new Vector3Int(x, y, z));
         }
         if (changes.Count == 0) return;
-        var before = new Dictionary<Vector3Int, TerrainVolume.Measure>();
+        var before = _beforeCellMeasures;
+        before.Clear();
         foreach (Vector3Int cell in cells) before[cell] = _volume.SampleCell(cell, _densityReader);
 
         var positions = new Vector3Int[changes.Count];
@@ -330,7 +423,10 @@ public partial class World : NetworkBehaviour
             float old = _terrain.Get(p);
             _terrain.Set(p, changes[i].Value);
             positions[i] = p; values[i] = changes[i].Value;
-            _structuralChanges.Add(p); // Retained even while another pass is running.
+            // Fractional weakening cannot disconnect the solid-sample graph.
+            // It CAN make a roof thin, so the independent roof scanner still sees it.
+            if (old < 0f && changes[i].Value >= 0f) _structuralChanges.Add(p);
+            NotifyCeilingChange(p, !work.IsCollapse);
             MarkSampleDirty(p);
             if (old < 0f && changes[i].Value >= 0f)
             {
@@ -342,6 +438,7 @@ public partial class World : NetworkBehaviour
             }
         }
 
+        BeginRemovalRewardBatch();
         foreach (Vector3Int cell in cells)
         {
             TerrainVolume.Measure removed = before[cell] - _volume.SampleCell(cell, _densityReader);
@@ -351,6 +448,7 @@ public partial class World : NetworkBehaviour
             Vector3 center = ((Vector3)cell + localCenter) * voxelSize;
             RewardRemoval(cell, center, removed.Volume * voxelSize * voxelSize * voxelSize, work.IsCollapse, work.Miner);
         }
+        FlushRemovalRewardBatch(work.Miner);
         // Host and remote miners use this SAME authoritative broadcast path.
         RpcApplyDensityDelta(++_revision, positions, values);
     }
@@ -358,13 +456,16 @@ public partial class World : NetworkBehaviour
     private void MarkSampleDirty(Vector3Int sample)
     {
         foreach (Vector3Int chunk in _terrain.ChunksSharingSample(sample))
+        {
+            _meshFence.MarkDirty(chunk);
             if (_dirtyMeshes.Add(chunk)) _dirtyMeshOrder.Enqueue(chunk);
+        }
     }
 
     private void RunStructuralBudget()
     {
         if (_solver == null && _structuralChanges.Count > 0 && _collapseQueue.Count == 0 &&
-            (_work == null || !_work.IsCollapse))
+            _collapseWork == null)
         {
             // Bound pass construction as well as traversal. All other changed
             // samples remain queued, including changes made during a prior pass.
@@ -376,10 +477,10 @@ public partial class World : NetworkBehaviour
             }
             foreach (Vector3Int p in seeds) _structuralChanges.Remove(p);
             _solver = new TerrainStructuralSolver(seeds, _terrain.Get,
-                _terrain.HasSolidRayToInfinity, Mathf.Clamp(minCeilingThickness, 0, 16));
+                _terrain.HasSolidRayToInfinity, 0); // Roofs have a separate, non-blocking scanner.
         }
         if (_solver == null) return;
-        var watch = System.Diagnostics.Stopwatch.StartNew();
+        _structureWatch.Restart();
         int remaining = Mathf.Max(1, structuralOperationsPerFrame);
         do
         {
@@ -387,7 +488,7 @@ public partial class World : NetworkBehaviour
             _solver.Step(step);
             remaining -= step;
         }
-        while (!_solver.IsComplete && remaining > 0 && watch.Elapsed.TotalMilliseconds < structuralMillisecondsPerFrame);
+        while (!_solver.IsComplete && remaining > 0 && _structureWatch.Elapsed.TotalMilliseconds < structuralMillisecondsPerFrame);
 
         List<Vector3Int> collapse;
         while (_solver.TryGetCollapse(out collapse))
@@ -395,65 +496,15 @@ public partial class World : NetworkBehaviour
         if (_solver.IsComplete) _solver = null;
     }
 
-    private void QueueDebris(Vector3Int cell, Vector3 center, float volume, int materialId)
-    {
-        int size = Mathf.Clamp(debrisBucketSizeInCells, 1, 4);
-        DebrisKey key = new DebrisKey { Cell = new Vector3Int(TerrainDensityStore.FloorDiv(cell.x, size),
-            TerrainDensityStore.FloorDiv(cell.y, size), TerrainDensityStore.FloorDiv(cell.z, size)), MaterialId = materialId };
-        DebrisBatch batch;
-        if (!_debris.TryGetValue(key, out batch))
-        {
-            _debrisOrder.Enqueue(key);
-            batch.RequiredChunks = new HashSet<Vector3Int>();
-        }
-        batch.RequiredChunks.Add(_terrain.Owner(cell));
-        batch.Volume += volume;
-        batch.Moment += center * volume;
-        _debris[key] = batch;
-        if (_debrisOrder.Count > 4096 && !_warnedBacklog)
-        {
-            _warnedBacklog = true;
-            Debug.LogWarning("[World] Large rubble backlog. Material is queued, not dropped. Tune debris budgets/lifetime for this world.");
-        }
-    }
-
-    private void FlushDebris()
-    {
-        if (_debrisOrder.Count == 0) return;
-        if (DebrisPool.Instance == null || !DebrisPool.Instance.IsConfigured)
-        {
-            if (!_warnedDebris) Debug.LogError("[World] DebrisPool/prefab is not configured. Removed material is retained in a pending rubble queue. See README.");
-            _warnedDebris = true;
-            return;
-        }
-        _warnedDebris = false;
-        int spawned = 0;
-        int attempts = Mathf.Min(_debrisOrder.Count, Mathf.Max(8, debrisSpawnsPerFrame * 8));
-        while (attempts-- > 0 && spawned < Mathf.Max(1, debrisSpawnsPerFrame))
-        {
-            if (!DebrisPool.Instance.HasCapacity) break;
-            DebrisKey key = _debrisOrder.Dequeue();
-            DebrisBatch batch = _debris[key];
-            bool ready = true;
-            foreach (Vector3Int chunk in batch.RequiredChunks)
-                if (_dirtyMeshes.Contains(chunk) || !_activeChunks.ContainsKey(chunk)) { ready = false; break; }
-            if (!ready) { _debrisOrder.Enqueue(key); continue; }
-            float size = Mathf.Pow(batch.Volume, 1f / 3f);
-            GameObject obj = DebrisPool.Instance.GetDebris(batch.Moment / batch.Volume,
-                Random.rotation, Vector3.one * size, batch.Volume, key.MaterialId);
-            if (obj == null) { _debrisOrder.Enqueue(key); break; }
-            _debris.Remove(key);
-            spawned++;
-        }
-        if (_debrisOrder.Count < 1024) _warnedBacklog = false;
-    }
-
     private void FlushDirtyMeshes()
     {
+        _meshWatch.Restart();
+        LastMeshMilliseconds = 0f;
         if (_dirtyMeshOrder.Count == 0 || _receivingSnapshot) return;
         int builds = 0;
         while (_dirtyMeshOrder.Count > 0 && builds < Mathf.Max(1, meshRebuildsPerFrame))
         {
+            if (builds > 0 && _meshWatch.Elapsed.TotalMilliseconds >= Mathf.Max(0.1f, meshMillisecondsPerFrame)) break;
             Vector3Int coord = _dirtyMeshOrder.Dequeue();
             _dirtyMeshes.Remove(coord);
             Chunk chunk;
@@ -461,10 +512,12 @@ public partial class World : NetworkBehaviour
             {
                 _terrain.FillChunk(coord, chunk.GetDensities());
                 chunk.BuildMeshSync(); // Also runs on a dedicated server.
+                _meshFence.MarkBuilt(coord);
                 builds++;
             }
             // Sleeping and ungenerated chunks rebuild from the store on activation.
         }
+        LastMeshMilliseconds = (float)_meshWatch.Elapsed.TotalMilliseconds;
     }
 
     [ClientRpc]
@@ -597,6 +650,7 @@ public partial class World : NetworkBehaviour
         {
             entry.Value.Init(chunkSize, voxelSize, ChunkPosition(entry.Key), noiseScale, seed, _terrain.MakeChunk(entry.Key));
             entry.Value.gameObject.SetActive(true);
+            _meshFence.MarkBuilt(entry.Key);
         }
         _dirtyMeshes.Clear(); _dirtyMeshOrder.Clear();
         StartWorldGeneration();
@@ -623,7 +677,7 @@ public partial class World : NetworkBehaviour
             if (!IsReady) { yield return null; continue; }
             if (Time.unscaledTime >= nextRefresh)
             {
-                UpdateVisibleChunks();
+                using (StreamingMarker.Auto()) UpdateVisibleChunks();
                 nextRefresh = Time.unscaledTime + 0.25f;
             }
             int count = Mathf.Max(1, chunkBuildsPerFrame);
@@ -631,8 +685,22 @@ public partial class World : NetworkBehaviour
             {
                 Vector3Int coord = _chunksToGenerate.Dequeue();
                 _generationQueued.Remove(coord);
-                if (!_activeChunks.ContainsKey(coord) && !_sleepingChunks.ContainsKey(coord) && NearAnyPlayer(coord, viewDistanceInChunks))
-                    GenerateChunkAt(coord);
+                if (!_activeChunks.ContainsKey(coord) && NearAnyPlayer(coord, viewDistanceInChunks))
+                {
+                    using (StreamingMarker.Auto())
+                    {
+                        Chunk sleeping;
+                        if (_sleepingChunks.TryGetValue(coord, out sleeping))
+                        {
+                            _sleepingChunks.Remove(coord);
+                            sleeping.Init(chunkSize, voxelSize, ChunkPosition(coord), noiseScale, seed, _terrain.MakeChunk(coord));
+                            sleeping.gameObject.SetActive(true);
+                            _activeChunks[coord] = sleeping;
+                            _meshFence.MarkBuilt(coord);
+                        }
+                        else GenerateChunkAt(coord);
+                    }
+                }
             }
             yield return null;
         }
@@ -652,7 +720,16 @@ public partial class World : NetworkBehaviour
     private void UpdateVisibleChunks()
     {
         _connectedPlayers.RemoveAll(p => p == null);
-        if (_connectedPlayers.Count == 0) return;
+        if (_connectedPlayers.Count == 0) { _lastStreamingCenters.Clear(); return; }
+        bool changed = _lastStreamingView != viewDistanceInChunks || _lastStreamingSleep != sleepDistanceInChunks ||
+            _lastStreamingTop != maxYChunk || _lastStreamingCenters.Count != _connectedPlayers.Count;
+        if (!changed)
+            for (int i = 0; i < _connectedPlayers.Count; i++)
+                if (_lastStreamingCenters[i] != GetChunkCoordFromPosition(_connectedPlayers[i].position)) { changed = true; break; }
+        if (!changed) return;
+        _lastStreamingCenters.Clear();
+        foreach (Transform player in _connectedPlayers) _lastStreamingCenters.Add(GetChunkCoordFromPosition(player.position));
+        _lastStreamingView = viewDistanceInChunks; _lastStreamingSleep = sleepDistanceInChunks; _lastStreamingTop = maxYChunk;
         var required = new HashSet<Vector3Int>();
         foreach (Transform player in _connectedPlayers)
         {
@@ -683,19 +760,25 @@ public partial class World : NetworkBehaviour
                 remove.Add(entry.Key);
             }
         foreach (Vector3Int c in remove) _sleepingChunks.Remove(c);
-        foreach (Vector3Int c in required)
+        // The old version rebuilt ALL waking sleeping chunks in this refresh.
+        // Put both wake-ups and fresh chunks through the per-frame build budget.
+        var missing = new List<Vector3Int>();
+        foreach (Vector3Int c in required) if (!_activeChunks.ContainsKey(c)) missing.Add(c);
+        missing.Sort((a, b) => NearestStreamingDistance(a).CompareTo(NearestStreamingDistance(b)));
+        _chunksToGenerate.Clear(); _generationQueued.Clear();
+        foreach (Vector3Int c in missing) { _generationQueued.Add(c); _chunksToGenerate.Enqueue(c); }
+    }
+
+    private int NearestStreamingDistance(Vector3Int coord)
+    {
+        int best = int.MaxValue;
+        foreach (Vector3Int center in _lastStreamingCenters)
         {
-            if (_activeChunks.ContainsKey(c)) continue;
-            Chunk sleeping;
-            if (_sleepingChunks.TryGetValue(c, out sleeping))
-            {
-                sleeping.Init(chunkSize, voxelSize, ChunkPosition(c), noiseScale, seed, _terrain.MakeChunk(c));
-                sleeping.gameObject.SetActive(true);
-                _activeChunks[c] = sleeping;
-                _sleepingChunks.Remove(c);
-            }
-            else if (_generationQueued.Add(c)) _chunksToGenerate.Enqueue(c);
+            Vector3Int d = coord - center;
+            int distance = d.x * d.x + d.y * d.y + d.z * d.z;
+            if (distance < best) best = distance;
         }
+        return best;
     }
 
     private Vector3 ChunkPosition(Vector3Int c) => (Vector3)Vector3Int.Scale(c, chunkSize) * voxelSize;
@@ -718,6 +801,7 @@ public partial class World : NetworkBehaviour
         chunk.Init(chunkSize, voxelSize, ChunkPosition(c), noiseScale, seed, _terrain.MakeChunk(c));
         chunk.gameObject.SetActive(true);
         _activeChunks[c] = chunk;
+        _meshFence.MarkBuilt(c);
     }
 
     public Vector3Int GetChunkCoordFromPosition(Vector3 pos) => new Vector3Int(

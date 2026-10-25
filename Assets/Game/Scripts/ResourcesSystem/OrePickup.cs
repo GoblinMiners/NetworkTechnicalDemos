@@ -13,6 +13,7 @@ public sealed class OrePickup : NetworkBehaviour
     private World _world;
     private float _nextPoseSync;
     private Vector3 _targetPosition;
+    private float _nextCollectionTime;
 
     public void Configure(World world,ResourcePileStore.Pile p)
     {
@@ -22,6 +23,7 @@ public sealed class OrePickup : NetworkBehaviour
     public override void OnStartServer()
     {
         base.OnStartServer();
+        _nextCollectionTime=Time.unscaledTime+(pileId%3)*0.05f;
         GetComponent<SphereCollider>().isTrigger=true;
         Rigidbody body=GetComponent<Rigidbody>();body.isKinematic=false;body.useGravity=true;
         body.constraints=RigidbodyConstraints.FreezeRotation;
@@ -41,7 +43,16 @@ public sealed class OrePickup : NetworkBehaviour
     }
     private void Update()
     {
-        if(isClient && !isServer)transform.position=Vector3.Lerp(transform.position,_targetPosition,1f-Mathf.Exp(-18f*Time.deltaTime));
+        if(isServer)
+        {
+            if(_world!=null && Time.unscaledTime>=_nextCollectionTime)
+            {
+                _nextCollectionTime=Time.unscaledTime+ResourcePickupRules.CollectionIntervalSeconds;
+                _world.TryCollectNearbyResource(pileId);
+            }
+            return;
+        }
+        if(isClient)transform.position=Vector3.Lerp(transform.position,_targetPosition,1f-Mathf.Exp(-18f*Time.deltaTime));
     }
     public override void OnStopServer()
     {
@@ -57,12 +68,7 @@ public sealed class OrePickup : NetworkBehaviour
         var renderer=GetComponentInChildren<Renderer>();
         if(renderer!=null)renderer.sharedMaterial=catalogue.Debris(materialId);
     }
-    private void OnTriggerEnter(Collider other)=>TryCollect(other);
-    private void OnTriggerStay(Collider other)=>TryCollect(other);
-    private void TryCollect(Collider other)
-    {
-        if(!isServer || _world==null)return;
-        var inventory=other.GetComponentInParent<PlayerInventory>();
-        if(inventory!=null)_world.TryCollectResource(pileId,inventory);
-    }
+    // Collection is checked by the server at the configured World reach, not by
+    // trigger overlap. A rock pile cannot prevent a nearby resource from trying.
+    // The trigger is kept on the prefab for compatibility; no prefab edits needed.
 }

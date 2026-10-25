@@ -27,7 +27,15 @@ public sealed class TerrainVolume
 
     public Measure SampleCell(Vector3Int cell, Func<Vector3Int, float> density)
     {
-        for (int i = 0; i < 8; i++) _d[i] = density(cell + Vector3Int.RoundToInt(P[i]));
+        int solid = 0;
+        for (int i = 0; i < 8; i++)
+        {
+            _d[i] = density(cell + Vector3Int.RoundToInt(P[i]));
+            if (_d[i] < 0f) solid++;
+        }
+        // Exact for these uniform cases; partially cut cells still use all six tetrahedra.
+        if (solid == 0) return new Measure();
+        if (solid == 8) return new Measure { Volume = 1f, Moment = Vector3.one * 0.5f };
         Measure result = new Measure();
         for (int t = 0; t < 6; t++) result += ClipTetra(t);
         return result;

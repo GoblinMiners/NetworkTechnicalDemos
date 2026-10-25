@@ -11,14 +11,38 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="83a6ca9c-5254-4b8d-9225-8045ce4f1555" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.NetworkTechnicalDemos/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.NetworkTechnicalDemos/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Input/PlayerControls.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Input/PlayerControls.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Input/PlayerControls.inputactions" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Input/PlayerControls.inputactions" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Game/Prefabs/Debris.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Prefabs/Debris.prefab" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Game/Prefabs/Player.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Prefabs/Player.prefab" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Game/Scene/DemoLvl.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scene/DemoLvl.unity" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/Chunk.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/Chunk.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/TerrainDensityStore.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/TerrainDensityStore.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/TerrainDensityStore.cs.meta" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/TerrainDensityStore.cs.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/TerrainMeshBuilder.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/TerrainMeshBuilder.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/TerrainMeshBuilder.cs.meta" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/TerrainMeshBuilder.cs.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/TerrainVolume.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/TerrainVolume.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/TerrainVolume.cs.meta" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/TerrainVolume.cs.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/World.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/World.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/MarchingCubes/MarchingChunks.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/MarchingCubes/MarchingChunks.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/WorldMaterials.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/WorldMaterials.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/WorldMaterials.cs.meta" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/Chunks/WorldMaterials.cs.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/PlayerScript/MiningServerValidation.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/PlayerScript/MiningServerValidation.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/PlayerScript/MiningServerValidation.cs.meta" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/PlayerScript/MiningServerValidation.cs.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/PlayerScript/PlayerMovement.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/PlayerScript/PlayerMovement.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/PlayerScript/VoxelMiner.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/PlayerScript/VoxelMiner.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/ResourcesSystem/OrePickup.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/ResourcesSystem/OrePickup.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/ResourcesSystem/OrePickup.cs.meta" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/ResourcesSystem/OrePickup.cs.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/Voxel/DebrisCleanup.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/Voxel/DebrisCleanup.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/Voxel/DebrisPool.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/Voxel/DebrisPool.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/Voxel/DebrisPool.cs.meta" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Game/Scripts/Voxel/DebrisPool.cs.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/Voxel/Voxel.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Game/Scripts/Voxel/Voxel.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Settings/UniversalRenderPipelineGlobalSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Settings/UniversalRenderPipelineGlobalSettings.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Packages/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/manifest.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Packages/packages-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/packages-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/DynamicsManager.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/DynamicsManager.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/TagManager.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/TagManager.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,7 +51,6 @@
   </component>
   <component name="EmbeddingIndexingInfo">
     <option name="cachedIndexableFilesCount" value="32" />
-    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -42,6 +65,7 @@
     <setting file="file://$PROJECT_DIR$/Assets/Game/Scripts/PlayerScript/PlayerInventory.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Game/Scripts/PlayerScript/PlayerSetup.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Game/Scripts/PlayerScript/VoxelMiner.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Game/Scripts/Save/WorldSaveEditor.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Game/Scripts/Voxel/DebrisCleanup.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Library/PackageCache/com.unity.inputsystem@7a4e1a2a8194/InputSystem/Editor/ControlPicker/InputControlPathEditor.cs" root0="SKIP_HIGHLIGHTING" />
   </component>
@@ -51,62 +75,65 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="7.9176E-319" />
-      <entry key="MS500" value="2.3972794160376404E-64" />
-      <entry key="S2" value="1.244313073468746E-16" />
-      <entry key="S5" value="4.344820767454258E-7" />
-      <entry key="S10" value="6.591525443669515E-4" />
-      <entry key="S30" value="0.08702859715624711" />
-      <entry key="S60" value="0.29503908447267907" />
-      <entry key="M2" value="0.5488882845253522" />
-      <entry key="M5" value="0.9103310796571934" />
-      <entry key="M10" value="1.2414006137366753" />
-      <entry key="M15" value="1.4248307535839853" />
-      <entry key="M30" value="1.7688279465877228" />
-      <entry key="H1" value="3.46757490596774" />
-      <entry key="H2" value="8.663081332965591" />
-      <entry key="H4" value="15.687505386483572" />
-      <entry key="D1" value="26.852641941480744" />
-      <entry key="W1" value="29.52705238350531" />
+      <entry key="MS100" value="1.0" />
+      <entry key="MS500" value="1.0000000000005822" />
+      <entry key="S2" value="1.0020508071656578" />
+      <entry key="S5" value="1.182774869833851" />
+      <entry key="S10" value="1.8437893831929841" />
+      <entry key="S30" value="3.4088665864948156" />
+      <entry key="S60" value="4.268877787299291" />
+      <entry key="M2" value="4.949031934502218" />
+      <entry key="M5" value="5.628941082910005" />
+      <entry key="M10" value="6.084131643751954" />
+      <entry key="M15" value="6.314071133861845" />
+      <entry key="M30" value="6.708093219741485" />
+      <entry key="H1" value="8.424610203909001" />
+      <entry key="H2" value="13.622398518149929" />
+      <entry key="H4" value="20.654177600286705" />
+      <entry key="D1" value="31.843644910983436" />
+      <entry key="W1" value="34.52564925733334" />
     </decayedCancelled>
     <decayedSelected>
-      <entry key="MS100" value="1.0" />
-      <entry key="MS500" value="1.0" />
-      <entry key="S2" value="1.0" />
-      <entry key="S5" value="1.0" />
-      <entry key="S10" value="1.0" />
-      <entry key="S30" value="1.0000000011187746" />
-      <entry key="S60" value="1.000033448089475" />
-      <entry key="M2" value="1.005783432326487" />
-      <entry key="M5" value="1.1273134430408063" />
-      <entry key="M10" value="1.3568156456984344" />
-      <entry key="M15" value="1.5037402353474916" />
-      <entry key="M30" value="1.8068945006206039" />
-      <entry key="H1" value="3.1196789737021335" />
-      <entry key="H2" value="6.661722594426715" />
-      <entry key="H4" value="11.181504387897691" />
-      <entry key="D1" value="18.550533872713622" />
-      <entry key="W1" value="20.609532917433853" />
+      <entry key="MS100" value="6.169258546365609E-96" />
+      <entry key="MS500" value="9.094291660734382E-20" />
+      <entry key="S2" value="2.24842429912506E-5" />
+      <entry key="S5" value="0.02389125930536812" />
+      <entry key="S10" value="0.2624088862314792" />
+      <entry key="S30" value="1.3258719833382682" />
+      <entry key="S60" value="1.9933416567154232" />
+      <entry key="M2" value="2.4497010702788855" />
+      <entry key="M5" value="2.8807430770232103" />
+      <entry key="M10" value="3.2210270427908627" />
+      <entry key="M15" value="3.408308394623004" />
+      <entry key="M30" value="3.7543982550410364" />
+      <entry key="H1" value="5.083670825771373" />
+      <entry key="H2" value="8.630619308525533" />
+      <entry key="H4" value="13.15759383408486" />
+      <entry key="D1" value="20.54427643729991" />
+      <entry key="W1" value="22.608548286903968" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="1.648973906150559E-6" />
-      <entry key="MS500" value="0.06973370764531024" />
-      <entry key="S2" value="0.5138787856469309" />
-      <entry key="S5" value="0.766204140586396" />
-      <entry key="S10" value="0.8759521361959212" />
-      <entry key="S30" value="1.0419241304944267" />
-      <entry key="S60" value="1.2702440493605478" />
-      <entry key="M2" value="1.5408600445483018" />
-      <entry key="M5" value="2.030619178099524" />
-      <entry key="M10" value="2.5936410641737018" />
-      <entry key="M15" value="2.9250831922852543" />
-      <entry key="M30" value="3.5733568710516583" />
-      <entry key="H1" value="6.583981963663524" />
-      <entry key="H2" value="15.320094494728204" />
-      <entry key="H4" value="26.86461161415168" />
-      <entry key="D1" value="45.40186422005895" />
-      <entry key="W1" value="50.13637391615228" />
+      <entry key="MS100" value="1.590280161186118E-10" />
+      <entry key="MS500" value="0.010972225592135941" />
+      <entry key="S2" value="0.325301790810668" />
+      <entry key="S5" value="0.8176285259229107" />
+      <entry key="S10" value="1.819090323387743" />
+      <entry key="S30" value="4.551194229075582" />
+      <entry key="S60" value="6.144816152615358" />
+      <entry key="M2" value="7.330839241007458" />
+      <entry key="M5" value="8.478847300866196" />
+      <entry key="M10" value="9.288278864810065" />
+      <entry key="M15" value="9.710589908930254" />
+      <entry key="M30" value="10.455924482818745" />
+      <entry key="H1" value="13.502906467410774" />
+      <entry key="H2" value="22.247260217634548" />
+      <entry key="H4" value="33.806848073400445" />
+      <entry key="D1" value="52.38652119529686" />
+      <entry key="W1" value="57.13397345792477" />
     </decayedShown>
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 1,
@@ -129,7 +156,7 @@
     &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
     &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
     &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;chatgpt&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -149,7 +176,7 @@
       <method v="2" />
     </configuration>
     <configuration name="Start Unity" type="RunUnityExe" factoryName="Unity Executable">
-      <option name="EXE_PATH" value="C:\Unity\Unity Hub\6000.6.2f1\Editor\Unity.exe" />
+      <option name="EXE_PATH" value="C:\Unity\Unity Hub\6000.6.0f1\Editor\Unity.exe" />
       <option name="PROGRAM_PARAMETERS" value="-projectPath D:\ContractedWork\NetworkDemo\NetworkTechnicalDemos -debugCodeOptimization" />
       <option name="WORKING_DIRECTORY" value="D:\ContractedWork\NetworkDemo\NetworkTechnicalDemos" />
       <option name="PASS_PARENT_ENVS" value="1" />
@@ -159,7 +186,7 @@
       <method v="2" />
     </configuration>
     <configuration name="Unit Tests (batch mode)" type="RunUnityExe" factoryName="Unity Executable">
-      <option name="EXE_PATH" value="C:\Unity\Unity Hub\6000.6.2f1\Editor\Unity.exe" />
+      <option name="EXE_PATH" value="C:\Unity\Unity Hub\6000.6.0f1\Editor\Unity.exe" />
       <option name="PROGRAM_PARAMETERS" value="-runTests -batchmode -projectPath D:\ContractedWork\NetworkDemo\NetworkTechnicalDemos -testResults Logs/results.xml -logFile Logs/Editor.log -testPlatform EditMode -debugCodeOptimization" />
       <option name="WORKING_DIRECTORY" value="D:\ContractedWork\NetworkDemo\NetworkTechnicalDemos" />
       <option name="PASS_PARENT_ENVS" value="1" />
