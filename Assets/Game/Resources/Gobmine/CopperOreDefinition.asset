@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 847bf611698b5079b3fd4d479e6a6253, type: 3}
+  m_Name: CopperOre
+  m_EditorClassIdentifier: Assembly-CSharp::TerrainMaterialDefinition
+  materialId: 2
+  displayName: Copper Ore
+  surfaceMaterial: {fileID: 2100000, guid: 266134e07d305923a9475f56782c872c, type: 2}
+  debrisMaterial: {fileID: 2100000, guid: af6bdbf2057a5d79b1ec3178ee9dc79c, type: 2}
+  hardness: 1.35
+  inventoryItem: {fileID: 11400000, guid: 520cc35c33ff5636b3bed9996a97a502, type: 2}
+  itemsPerCubicMetre: 32
+  generateDeposits: 1
+  depositGridSizeInCells: 40
+  depositChancePerThousand: 700
+  minimumRadiusInCells: 5
+  maximumRadiusInCells: 10
+  minimumCellY: -100000
+  maximumCellY: 100000

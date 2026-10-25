@@ -1,0 +1,11 @@
+{
+  "Chunks/Chunk.cs.meta": "62a35084ee15463fcd081a2aeb7459f2ec3675f5279e31132404774359a3f30a",
+  "Chunks/World.cs.meta": "7a3b0da6da2ba13dd1df95a5023dfc88cdcde6db0d9ad173d3720dd6d1702da8",
+  "PlayerScript/PlayerMiner.cs.meta": "a47017da09a525b75543123dca35c62df6549a631cdee057d5585b2d2dab07f2",
+  "PlayerScript/PlayerMovement.cs.meta": "618d953c2ca558774b324a8dffe07edf2128cb34dd8b766c7a96224973160213",
+  "PlayerScript/PlayerNetworkRegistration.cs.meta": "bf95c1163a1203ba10d166b8786ef8e984a1fc4bd86d4efd009f26836c694cf1",
+  "PlayerScript/VoxelMiner.cs.meta": "04c844cfaf95fe8af7504f4d37788dba0f9eefe3cd15686471c0398d38eb0b52",
+  "Save/WorldSaver.cs.meta": "9bac7b0876f07b82c33a71bd811c2b2e27a869c3efc99bdd947959b51f4f3610",
+  "Voxel/DebrisCleanup.cs.meta": "a3fd77212c902f932724f813f2627672c7cee2b525feef1dfc3f5f36e7916881",
+  "Voxel/DebrisPool.cs.meta": "febe0d59b1dd6ff9907174b900de716382f9da9743bbcf79888d6d474dfda5fe"
+}

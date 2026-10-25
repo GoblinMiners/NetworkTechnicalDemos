@@ -1,0 +1,29 @@
+{
+  "validation_kind": "Portable Python algorithm models and lexical/source checks; NOT Unity or C# execution",
+  "groups_passed": 13,
+  "groups": [
+    "300 randomized connectivity fields against independent support oracle",
+    "78 supported-cache line regressions",
+    "Disconnected islands at seven heights, including below zero",
+    "150001-sample island resumes across work budgets and fully collapses",
+    "All 50 roof samples detected from upper and lower tunnel edits",
+    "True roof boundaries, interpolated thickness, one-sided air and disable option",
+    "150 concurrent-removal/follow-up-pass connectivity regressions",
+    "57 analytic planar volumes/centroids, full/empty cells and partial cut accounting",
+    "3600 clipped tetrahedra checked against independent convex-hull geometry",
+    "4000 removal-only volume transitions never create material",
+    "201 negative/positive grid divisions and all shared-boundary owners",
+    "Support-ray proof rejects an enclosed 125-sample body",
+    "C# delimiter/source-path checks and unchanged original Unity GUID metadata"
+  ],
+  "seconds": 4.13,
+  "not_tested": [
+    "C# compilation",
+    "Mirror Weaver",
+    "Unity Editor regression suite execution",
+    "Unity play mode",
+    "Runtime prefab/scene behaviour (static wiring checked separately)",
+    "Live host/client or dedicated-server networking",
+    "Frame-time profiling"
+  ]
+}
