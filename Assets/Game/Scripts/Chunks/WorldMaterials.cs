@@ -49,7 +49,7 @@ public partial class World
         try
         {
             ResolveMaterialAssets();
-            _worldRulesSignature=materialCatalog.RulesSignature();
+            _worldRulesSignature=ComputeWorldRulesSignature();
             MaterialWorldPersistence.Snapshot saved; string error;
             bool loaded=MaterialWorldPersistence.TryLoad(MaterialSavePath,out saved,out error);
             if(!loaded && error!=null)throw new InvalidOperationException(error+" Back up/repair the save; no new world will overwrite it.");
@@ -59,8 +59,9 @@ public partial class World
                     throw new InvalidOperationException("Saved world rules differ from current dimensions/material IDs/yields/generation. Restore the original settings or move the material save AND its .bak aside for a new world.");
                 seed=saved.Seed;
             }
-            _terrain=new TerrainDensityStore(chunkSize,voxelSize);_densityReader=_terrain.Get;
-            _materials=new TerrainMaterialGenerator(seed,materialCatalog);
+            InitializeExpeditionGenerator();
+            _terrain=new TerrainDensityStore(chunkSize,voxelSize,_caverns);_densityReader=_terrain.Get;
+            _materials=new TerrainMaterialGenerator(seed,materialCatalog,voxelSize,ExpeditionEnabled ? ExpeditionProfile.surfaceReferenceY : 0f);
             _resourcePiles=new ResourcePileStore();
             if(loaded)
             {
@@ -72,8 +73,12 @@ public partial class World
                         throw new InvalidOperationException("Saved resource item/material mapping is invalid.");
                 }
                 _resourcePiles.Import(saved.Resources);
+                LoadFallingShapeRecords(saved.Shapes);
             }
-            else if(importLegacyDensitySave) _terrain.ImportLegacyChunks(WorldSaver.LoadWorld(chunkSize)); // Old save is read, never overwritten.
+            else if(importLegacyDensitySave && !ExpeditionEnabled) _terrain.ImportLegacyChunks(WorldSaver.LoadWorld(chunkSize)); // Never import legacy densities into a different cavern generator.
+            InitializeExpeditionFluids();
+            if (loaded) { _fluids?.Import(saved.Fluids); expeditionUnlocks = saved.ExpeditionUnlocks; }
+            else expeditionUnlocks = 0;
             _materialWorldValid=true;
             _nextAutosave=Time.unscaledTime+Mathf.Max(1f,materialAutosaveSeconds);
             return true;
@@ -83,9 +88,10 @@ public partial class World
     private void InitializeClientMaterials(int worldSeed,string signature)
     {
         ResolveMaterialAssets();
-        if(materialCatalog.RulesSignature()!=signature)throw new InvalidOperationException("Host and client material catalogues differ. Install the same patch/assets on both.");
+        if(ComputeWorldRulesSignature()!=signature)throw new InvalidOperationException("Host and client material catalogues differ. Install the same patch/assets on both.");
         _worldRulesSignature=signature;
-        seed=worldSeed;_materialCache.Clear();_materials=new TerrainMaterialGenerator(seed,materialCatalog);
+        seed=worldSeed; InitializeExpeditionGenerator(); _materialCache.Clear();
+        _materials=new TerrainMaterialGenerator(seed,materialCatalog,voxelSize,ExpeditionEnabled ? ExpeditionProfile.surfaceReferenceY : 0f);
     }
     private void ResetMaterialRuntime()
     {
@@ -140,7 +146,13 @@ public partial class World
         // This retains fractions and avoids hundreds of SyncDictionary operations.
         foreach (BatchedMiningReward reward in _miningRewardBatch.Values)
         {
-            if (miner != null && miner.isServer && miner.ServerAddUnits(reward.ItemId, reward.Units)) continue;
+            if (miner != null && miner.isServer)
+            {
+                NotifyMinedExposure(miner, reward.MaterialId, reward.Units);
+                string reason;
+                if (CanCollectExpeditionMaterial(miner, reward.MaterialId, out reason) && miner.ServerAddUnits(reward.ItemId, reward.Units)) continue;
+                NotifyEquipmentMessage(miner, reason);
+            }
             _resourcePiles.Add(reward.MaterialId, reward.ItemId, reward.Units, reward.Moment / (float)reward.Units);
         }
         _miningRewardBatch.Clear();
@@ -149,8 +161,9 @@ public partial class World
     {
         int id=GetSolidMaterialId(cell);
         var d=materialCatalog.Get(id);
-        QueueDebris(cell,centre,cubicMetres,id,collapse);
-        if(collapse) QueueCollapseHazard(cell,centre,cubicMetres);
+        if (!collapse || !preserveDisconnectedShapes) QueueDebris(cell,centre,cubicMetres,id,collapse);
+        if (collapse && !preserveDisconnectedShapes) QueueCollapseHazard(cell,centre,cubicMetres);
+        // Default: collapses become genuine shaped rigidbodies, not invisible hazards.
         if(d==null || d.inventoryItem==null || d.itemsPerCubicMetre<=0)return;
         double units=cubicMetres*d.itemsPerCubicMetre;
         if(!collapse && miner!=null && miner.isServer)
@@ -210,7 +223,17 @@ public partial class World
             pile.Position = view.transform.position;
             _resourcePiles.UpdatePosition(id, pile.Position);
         }
-        if (GetResourcePickupAccess(pile, inventory) != ResourcePickupAccess.Reachable) return false;
+        ResourcePickupAccess access = GetResourcePickupAccess(pile, inventory);
+        if (access != ResourcePickupAccess.Reachable)
+        {
+            if (access == ResourcePickupAccess.NeedsEquipment && inventory != null &&
+                ResourcePickupRules.WithinReach(inventory.transform.position, pile.Position, resourcePickupReach))
+            {
+                string reason; CanCollectExpeditionMaterial(inventory, pile.MaterialId, out reason);
+                NotifyEquipmentMessage(inventory, reason);
+            }
+            return false;
+        }
         if (!inventory.ServerAddUnits(pile.ItemId, pile.Units)) return false;
         // Main-thread transaction: successful credit followed by removal, no await/yield.
         // Subsequent players/trigger callbacks cannot collect this record a second time.
@@ -230,6 +253,8 @@ public partial class World
             return ResourcePickupAccess.Invalid;
         GobminePlayerHealth health = inventory.GetComponent<GobminePlayerHealth>();
         if (health != null && health.IsDead) return ResourcePickupAccess.PlayerDown;
+        string equipmentReason;
+        if (!CanCollectExpeditionMaterial(inventory, pile.MaterialId, out equipmentReason)) return ResourcePickupAccess.NeedsEquipment;
         if (!ResourcePickupRules.WithinReach(inventory.transform.position, pile.Position, resourcePickupReach))
             return ResourcePickupAccess.TooFar;
         // Raycasts alone cannot determine whether an endpoint is inside solid terrain.
@@ -342,7 +367,7 @@ public partial class World
         if(!_materialWorldValid || _terrain==null)return false;
         try
         {
-            if(materialCatalog.RulesSignature()!=_worldRulesSignature)
+            if(ComputeWorldRulesSignature()!=_worldRulesSignature)
                 throw new InvalidOperationException("Material rules changed while the world was running. Revert them before saving; use a new save slot for different generation or reward rules.");
             var s=new MaterialWorldPersistence.Snapshot {Seed=seed,ChunkSize=chunkSize,VoxelSize=voxelSize,RulesSignature=_worldRulesSignature};
             foreach(var p in _terrain.CopyOverrides())s.Density.Add(new MaterialWorldPersistence.DensityPoint {Position=p.Key,Value=p.Value});
@@ -359,6 +384,10 @@ public partial class World
                     if(material>0 && p.Value>0)s.Resources.Add(new ResourcePileStore.Pile {MaterialId=material,ItemId=p.Key,Units=p.Value,Position=inventory.transform.position+Vector3.up*0.4f});
                 }
             }
+            s.ExpeditionState = ExpeditionEnabled;
+            s.ExpeditionUnlocks = expeditionUnlocks;
+            if (_fluids != null) s.Fluids = _fluids.CopyOverrides();
+            s.Shapes = SnapshotFallingShapesForSave();
             MaterialWorldPersistence.Write(MaterialSavePath,s);return true;
         }
         catch(Exception ex){Debug.LogError("[Gobmine Material Save] "+ex);return false;}

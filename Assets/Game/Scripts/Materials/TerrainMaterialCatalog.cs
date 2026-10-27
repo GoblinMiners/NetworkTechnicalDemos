@@ -45,6 +45,10 @@ public sealed class TerrainMaterialCatalog : ScriptableObject
                 d.maximumRadiusInCells < d.minimumRadiusInCells || d.maximumRadiusInCells > d.depositGridSizeInCells / 2 ||
                 d.minimumCellY > d.maximumCellY || d.depositChancePerThousand < 0 || d.depositChancePerThousand > 1000))
                 throw new InvalidOperationException(d.name + " has invalid deposit settings (radius must be <= half grid spacing).");
+            if (d.useDepthBand && (!GobmineExpeditionRules.Finite(d.minimumDepthMetres) || !GobmineExpeditionRules.Finite(d.maximumDepthMetres) ||
+                d.minimumDepthMetres < 0f || d.maximumDepthMetres < d.minimumDepthMetres)) throw new InvalidOperationException(d.name + " has invalid metre depth bands.");
+            if (d.requiredToolTier < 0 || d.requiredToolTier > 4 || !GobmineExpeditionRules.Finite(d.radiationRate) || d.radiationRate < 0f)
+                throw new InvalidOperationException(d.name + " has invalid equipment/radiation rules.");
             _byId.Add(d.materialId, d);
         }
         if (!_byId.ContainsKey(baseStoneId)) throw new InvalidOperationException("Base stone ID is missing.");
@@ -78,6 +82,12 @@ public sealed class TerrainMaterialCatalog : ScriptableObject
              .Append(':').Append(d.generateDeposits ? 1 : 0).Append(':').Append(d.depositGridSizeInCells)
              .Append(':').Append(d.depositChancePerThousand).Append(':').Append(d.minimumRadiusInCells)
              .Append(':').Append(d.maximumRadiusInCells).Append(':').Append(d.minimumCellY).Append(':').Append(d.maximumCellY);
+            // Default new fields preserve signatures for existing, non-expedition worlds.
+            if (d.useDepthBand || d.requiredToolTier != 0 || d.radiationRate > 0f || d.requireRadiationSuit || d.requireShieldedContainer)
+                s.Append(":EXP1:").Append(d.useDepthBand ? 1 : 0).Append(':').Append(d.minimumDepthMetres.ToString("R", CultureInfo.InvariantCulture))
+                 .Append(':').Append(d.maximumDepthMetres.ToString("R", CultureInfo.InvariantCulture)).Append(':').Append(d.requiredToolTier)
+                 .Append(':').Append(d.radiationRate.ToString("R", CultureInfo.InvariantCulture)).Append(':').Append(d.requireRadiationSuit ? 1 : 0)
+                 .Append(':').Append(d.requireShieldedContainer ? 1 : 0);
         }
         using (var sha = SHA256.Create())
             return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(s.ToString()))).Replace("-", "");

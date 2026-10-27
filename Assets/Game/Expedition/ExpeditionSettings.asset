@@ -1,0 +1,121 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5636a9b8bc25cd8ab73a6d4e8e53487, type: 3}
+  m_Name: ExpeditionSettings
+  m_EditorClassIdentifier: Assembly-CSharp::GobmineExpeditionSettings
+  surfaceReferenceY: 0
+  cavernGridMetres: 24
+  firstCavernDepth: 20
+  cavernChancePerThousand: 650
+  horizontalRadiusFraction: 0.3
+  verticalRadiusFraction: 0.28
+  lavaStartsAtDepth: 220
+  waterPocketChancePerThousand: 450
+  lavaPocketChancePerThousand: 500
+  initialFluidFillFraction: 0.3
+  fluidCellMetres: 1
+  fluidOperationsPerFrame: 24
+  fluidMillisecondsPerFrame: 1.5
+  fluidDiscoveryCellsPerFrame: 64
+  fluidActiveRadiusMetres: 12
+  fluidRegionsPerFrame: 1
+  maxRenderedFluidRegions: 160
+  waterMaterial: {fileID: 2100000, guid: 820e902e7d9c9de42b45f494d2821d67, type: 2}
+  lavaMaterial: {fileID: 2100000, guid: 2a938cb7ded604640be6c84488b992ab, type: 2}
+  safeFallMetres: 3
+  lethalFallMetres: 12
+  waterCushionDepthMetres: 2.5
+  oxygenSeconds: 30
+  tankOxygenSeconds: 90
+  drowningDamagePerSecond: 12
+  lavaDamagePerSecond: 60
+  radiationDamageAtFullDose: 12
+  doseRecoveryPerSecond: 2
+  radiationRadiusMetres: 6
+  radiationSuitReduction: 0.9
+  heatSuitReduction: 0.7
+  impactBootReduction: 0.5
+  workshopPosition: {x: 0, y: -2, z: 0}
+  workshopReach: 8
+  recipes:
+  - unlock: 1
+    prerequisite: 0
+    label: Tier 1 tool - silver
+    costs:
+    - itemId: 1
+      amount: 50
+    - itemId: 2
+      amount: 20
+  - unlock: 2
+    prerequisite: 1
+    label: Tier 2 tool - gold
+    costs:
+    - itemId: 2
+      amount: 40
+    - itemId: 3
+      amount: 20
+  - unlock: 4
+    prerequisite: 2
+    label: Tier 3 tool - uranium
+    costs:
+    - itemId: 3
+      amount: 30
+    - itemId: 4
+      amount: 15
+  - unlock: 8
+    prerequisite: 4
+    label: Tier 4 tool - deep crystal
+    costs:
+    - itemId: 4
+      amount: 30
+    - itemId: 5
+      amount: 10
+  - unlock: 16
+    prerequisite: 0
+    label: Radiation suit
+    costs:
+    - itemId: 3
+      amount: 20
+    - itemId: 4
+      amount: 10
+  - unlock: 32
+    prerequisite: 0
+    label: Shielded ore container
+    costs:
+    - itemId: 2
+      amount: 30
+    - itemId: 3
+      amount: 15
+  - unlock: 64
+    prerequisite: 0
+    label: Heat-resistant suit (70% reduction)
+    costs:
+    - itemId: 4
+      amount: 20
+    - itemId: 5
+      amount: 20
+  - unlock: 128
+    prerequisite: 0
+    label: Air tank (90 seconds)
+    costs:
+    - itemId: 2
+      amount: 20
+    - itemId: 3
+      amount: 10
+  - unlock: 256
+    prerequisite: 0
+    label: Impact boots (50% fall reduction)
+    costs:
+    - itemId: 1
+      amount: 40
+    - itemId: 2
+      amount: 20

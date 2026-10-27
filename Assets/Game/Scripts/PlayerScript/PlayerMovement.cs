@@ -38,6 +38,8 @@ public class PlayerMovement : NetworkBehaviour
     public GameObject localCamera;
     public GameObject localCinemachine;
 
+    [Header("Falling-chunk knockback")]
+    [Min(1f)] public float knockbackDeceleration = 10f;
     [Header("Terrain safety")]
     public bool guardTerrainStreaming = true;
     public bool rollbackSolidPenetration = true;
@@ -49,8 +51,9 @@ public class PlayerMovement : NetworkBehaviour
     private readonly PlayerJumpBuffer _jumpBuffer = new PlayerJumpBuffer();
     private readonly RaycastHit[] _groundHits = new RaycastHit[32];
     private float _verticalPitch, _verticalVelocity, _configuredStepOffset;
-    private bool _localStarted, _grounded;
+    private bool _localStarted, _grounded, _swimUp, _swimDown;
     private int _collisionMask;
+    private Vector3 _chunkImpulseVelocity;
     private float _nextWarning;
     public bool IsGrounded => _grounded;
     public float VerticalVelocity => _verticalVelocity;
@@ -157,7 +160,7 @@ public class PlayerMovement : NetworkBehaviour
     private void OnDisable()
     {
         _runtimeInput?.Disable(); _fallbackJump?.Disable();
-        _jumpBuffer.Reset(); _verticalVelocity = 0f; _grounded = false;
+        _jumpBuffer.Reset(); _verticalVelocity = 0f; _grounded = false; _chunkImpulseVelocity = Vector3.zero;
         if (_controller != null && _localStarted) _controller.stepOffset = _configuredStepOffset;
     }
     private void OnDestroy() { DisposeInput(); }
@@ -171,7 +174,8 @@ public class PlayerMovement : NetworkBehaviour
     private void Update()
     {
         if (!isLocalPlayer || !_localStarted || _controller == null || !_controller.enabled || _move == null) return;
-        UpdateLook();
+        bool menuOpen = GobminePlayerEquipment.LocalMenuOpen;
+        if (!menuOpen) UpdateLook();
         World world = World.Instance;
         if (world == null || !world.IsReady)
         { MovementStatus = "Waiting for world / terrain snapshot"; TerrainWaitFrames++; return; }
@@ -183,8 +187,13 @@ public class PlayerMovement : NetworkBehaviour
         }
         bool dead = _health != null && _health.IsDead;
         if (dead) _jumpBuffer.Reset();
-        else if (_jump != null && _jump.WasPressedThisFrame()) _jumpBuffer.Press(Time.time);
-        Vector2 input = dead ? Vector2.zero : _move.ReadValue<Vector2>();
+        else if (!menuOpen && _jump != null && _jump.WasPressedThisFrame()) _jumpBuffer.Press(Time.time);
+        _swimUp = !dead && !menuOpen && _jump != null && _jump.IsPressed();
+        InputAction descend = _runtimeInput.FindAction("Player/Descend", false);
+        if (descend != null && !descend.enabled) descend.Enable();
+        _swimDown = !dead && !menuOpen && ((descend != null && descend.IsPressed()) ||
+            (Keyboard.current != null && Keyboard.current.leftCtrlKey.isPressed) || (Gamepad.current != null && Gamepad.current.rightShoulder.isPressed));
+        Vector2 input = dead || menuOpen ? Vector2.zero : _move.ReadValue<Vector2>();
         Vector3 horizontal = PlayerMotorRules.HorizontalMotion(input, transform.right, transform.forward, moveSpeed);
         float frameDt = Mathf.Min(Time.deltaTime, Mathf.Clamp(maximumMotorDeltaTime, 0.02f, 0.1f));
         if (frameDt <= 0f) return;
@@ -207,12 +216,25 @@ public class PlayerMovement : NetworkBehaviour
 
     private bool MoveStep(World world, Vector3 horizontal, float dt, bool dead)
     {
-        bool wantsJump = !dead && _jumpBuffer.CanConsume(Time.time, jumpBufferSeconds, coyoteSeconds);
-        bool wasGrounded = _grounded;
+        Vector3 bodyCentre = transform.TransformPoint(_controller.center);
+        bool swimming = world.FluidAt(bodyCentre) == GobmineFluidKind.Water;
+        GobmineFluidKind feetFluid = world.FluidAt(bodyCentre-Vector3.up*(_controller.height*0.5f-0.08f));
+        if (swimming) { horizontal *= 0.55f; _jumpBuffer.Reset(); }
+        else if (feetFluid == GobmineFluidKind.Water) horizontal *= 0.7f;
+        else if (feetFluid == GobmineFluidKind.Lava) horizontal *= 0.25f;
+        bool wantsJump = !swimming && !dead && !GobminePlayerEquipment.LocalMenuOpen && _jumpBuffer.CanConsume(Time.time, jumpBufferSeconds, coyoteSeconds);
+        bool wasGrounded = _grounded && !swimming;
         float velocity = wantsJump ? PlayerMotorRules.JumpSpeed(jumpHeight, gravity) : _verticalVelocity;
         if (wasGrounded && !wantsJump && velocity < 0f) velocity = -2f;
         float nextVelocity = Mathf.Max(-terminalFallSpeed, velocity + gravity * dt);
-        Vector3 displacement = horizontal * dt + Vector3.up * ((velocity + nextVelocity) * 0.5f * dt);
+        if (swimming)
+        {
+            float target = _swimUp ? 3f : _swimDown ? -3f : 0f;
+            velocity = Mathf.Clamp(velocity, -4f, 4f);
+            nextVelocity = Mathf.MoveTowards(velocity, target, 14f*dt);
+        }
+        Vector3 displacement = (horizontal + _chunkImpulseVelocity) * dt +
+            Vector3.up * ((velocity + nextVelocity) * 0.5f * dt);
         Vector3 centre = transform.TransformPoint(_controller.center);
         Bounds sweep = PlayerMotorRules.SweptBounds(centre, _controller.radius, _controller.height,
             displacement, _configuredStepOffset, groundSnapDistance, Mathf.Max(0.02f, _controller.skinWidth));
@@ -235,10 +257,10 @@ public class PlayerMovement : NetworkBehaviour
         CollisionFlags flags = _controller.Move(displacement);
         _verticalVelocity = nextVelocity;
         if ((flags & CollisionFlags.Above) != 0 && _verticalVelocity > 0f) _verticalVelocity = 0f;
-        _grounded = (flags & CollisionFlags.Below) != 0 && _verticalVelocity <= 0f;
+        _grounded = !swimming && (flags & CollisionFlags.Below) != 0 && _verticalVelocity <= 0f;
         // A short probe prevents bouncing on descending voxel slopes. Never snap upward
         // while jumping, or attach a falling player to a distant floor.
-        if (!_grounded && !wantsJump && _verticalVelocity <= 0f && wasGrounded)
+        if (!swimming && !_grounded && !wantsJump && _verticalVelocity <= 0f && wasGrounded)
         {
             float drop;
             if (TryGroundDrop(out drop))
@@ -254,12 +276,13 @@ public class PlayerMovement : NetworkBehaviour
             _verticalVelocity = 0f; _grounded = false; _jumpBuffer.Reset(); PenetrationRollbacks++;
             MovementStatus = "Rolled back a move into solid terrain"; WarnThrottled(MovementStatus); return false;
         }
+        _chunkImpulseVelocity = Vector3.MoveTowards(_chunkImpulseVelocity,Vector3.zero,Mathf.Max(0.2f,knockbackDeceleration)*dt);
         if (_grounded)
         {
             _verticalVelocity = -2f;
             if (!dead) _jumpBuffer.Grounded(Time.time);
         }
-        MovementStatus = dead ? "Downed (gravity only)" : _grounded ? "Grounded" : _verticalVelocity > 0f ? "Jumping" : "Falling";
+        MovementStatus = dead ? "Downed (gravity only)" : swimming ? "Swimming" : _grounded ? "Grounded" : _verticalVelocity > 0f ? "Jumping" : "Falling";
         return true;
     }
 
@@ -287,6 +310,14 @@ public class PlayerMovement : NetworkBehaviour
         }
         if (best > groundSnapDistance) return false;
         drop = best; return true;
+    }
+
+    [TargetRpc]
+    public void TargetReceiveChunkKnockback(NetworkConnectionToClient owner, Vector3 worldVelocity)
+    {
+        if (!isLocalPlayer || !PlayerMotorRules.Finite(worldVelocity)) return;
+        _chunkImpulseVelocity = Vector3.ClampMagnitude(_chunkImpulseVelocity + new Vector3(worldVelocity.x,0f,worldVelocity.z),18f);
+        if (worldVelocity.y > 0f) _verticalVelocity = Mathf.Max(_verticalVelocity,Mathf.Min(worldVelocity.y,8f));
     }
 
     private void WarnThrottled(string message)

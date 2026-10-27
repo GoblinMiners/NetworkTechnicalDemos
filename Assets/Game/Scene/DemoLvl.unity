@@ -190,13 +190,33 @@ MonoBehaviour:
   minimumCollapseImpactSpeed: 1
   maximumCollapseFallDistance: 10
   collapseHazardActivationRadius: 24
-  materialCatalog: {fileID: 11400000, guid: 35b6a98f0055500f9d932438fb22bdca, type: 2}
+  expeditionSettings: {fileID: 11400000, guid: c394ce6495281634780e928eb8d2df69, type: 2}
+  preserveDisconnectedShapes: 1
+  shapeMeshCellsPerFrame: 4096
+  shapeCollisionBoxes: 48
+  maximumCeilingColumnsPerChunk: 12
+  shapeMaterialDensityKgPerM3: 1000
+  ceilingShapeLifetime: 120
+  detachedShapeLifetime: 20
+  settledShapeLifetime: 5
+  maximumDynamicShapeBodies: 24
+  shapePacketsPerFrame: 4
+  shapePoseInterval: 0.12
+  minimumShapeImpactSpeed: 2
+  damagePerShapeSizeAndSpeed: 8
+  maximumShapeImpactDamage: 90
+  knockbackPerShapeSizeAndSpeed: 1.7
+  maximumShapeKnockbackSpeed: 14
+  shapeImpactCooldown: 0.75
+  materialCatalog: {fileID: 11400000, guid: a083a6ef564f5c845b82d5297d63f6d0, type: 2}
   resourcePickupPrefab: {fileID: 5108917710695762759, guid: 67739a353a53594f9140cc9bd686359b, type: 3}
   maxVisibleResourcePickups: 128
   resourcePickupReach: 2
   materialAutosaveSeconds: 60
-  materialSaveFileName: world_materials_v1.dat
-  importLegacyDensitySave: 1
+  materialSaveFileName: world_expedition_v1.dat
+  importLegacyDensitySave: 0
+  playerCollisionBuildsPerFrame: 1
+  playerCollisionMillisecondsPerFrame: 2
   maximumCosmeticDebrisAgeSeconds: 0.5
   maximumPendingCosmeticDebris: 256
   maximumDebrisPieceSizeMetres: 0.35
@@ -209,7 +229,7 @@ Transform:
   m_GameObject: {fileID: 5491319}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.69689, y: -0, z: -0.5896}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

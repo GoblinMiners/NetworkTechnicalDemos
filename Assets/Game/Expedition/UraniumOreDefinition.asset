@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 847bf611698b5079b3fd4d479e6a6253, type: 3}
+  m_Name: UraniumOreDefinition
+  m_EditorClassIdentifier: Assembly-CSharp::TerrainMaterialDefinition
+  materialId: 5
+  displayName: Uranium Ore
+  surfaceMaterial: {fileID: 2100000, guid: ecb49b74540743a4dbf7b61f3dfb0e9e, type: 2}
+  debrisMaterial: {fileID: 2100000, guid: 464ceabd766f33c4495064ca1d3ac90f, type: 2}
+  hardness: 3
+  inventoryItem: {fileID: 11400000, guid: 1a2dbec60696b2c43a5a3ea52183001b, type: 2}
+  itemsPerCubicMetre: 6
+  generateDeposits: 1
+  depositGridSizeInCells: 48
+  depositChancePerThousand: 450
+  minimumRadiusInCells: 4
+  maximumRadiusInCells: 9
+  minimumCellY: -10000000
+  maximumCellY: 10000000
+  useDepthBand: 1
+  minimumDepthMetres: 120
+  maximumDepthMetres: 100000
+  requiredToolTier: 3
+  radiationRate: 1
+  requireRadiationSuit: 1
+  requireShieldedContainer: 1

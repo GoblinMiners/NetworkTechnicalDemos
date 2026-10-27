@@ -5,7 +5,8 @@ using UnityEngine;
 /// <summary>
 /// Deterministic, global-cell deposits. Integer hashing and fixed-point ellipsoids
 /// avoid Unity Random, chunk-order dependence and platform-specific noise at ore boundaries.
-/// No air is generated here: support remains solid-rock-minus-excavation.
+/// This class assigns solid material identities only. Cavern air and structural
+/// support are handled by TerrainDensityStore / GobmineCavernGenerator.
 /// </summary>
 public sealed class TerrainMaterialGenerator
 {
@@ -27,15 +28,27 @@ public sealed class TerrainMaterialGenerator
                 throw new ArgumentException("Invalid deposit rule.");
     }
     public TerrainMaterialGenerator(int seed, TerrainMaterialCatalog catalogue)
-        : this(seed, catalogue.baseStoneId, RulesFrom(catalogue)) { }
+        : this(seed, catalogue, 0.25f, 0f) { }
+    public TerrainMaterialGenerator(int seed, TerrainMaterialCatalog catalogue, float voxelSize, float surfaceReferenceY)
+        : this(seed, catalogue.baseStoneId, RulesFrom(catalogue, voxelSize, surfaceReferenceY)) { }
 
-    private static Rule[] RulesFrom(TerrainMaterialCatalog catalogue)
+    private static Rule[] RulesFrom(TerrainMaterialCatalog catalogue, float voxelSize, float surfaceReferenceY)
     {
         var result = new List<Rule>();
         foreach (var d in catalogue.definitions)
             if (d.materialId != catalogue.baseStoneId && d.generateDeposits)
+            {
+                int minY = d.minimumCellY, maxY = d.maximumCellY;
+                if (d.useDepthBand)
+                {
+                    // Constrain the material cell's centre, not just its deposit centre.
+                    minY = Math.Max(minY, Mathf.CeilToInt((surfaceReferenceY-d.maximumDepthMetres)/voxelSize-0.5f));
+                    maxY = Math.Min(maxY, Mathf.FloorToInt((surfaceReferenceY-d.minimumDepthMetres)/voxelSize-0.5f));
+                }
+                if (minY > maxY) continue;
                 result.Add(new Rule { Id=d.materialId, Grid=d.depositGridSizeInCells, Chance=d.depositChancePerThousand,
-                    MinRadius=d.minimumRadiusInCells, MaxRadius=d.maximumRadiusInCells, MinY=d.minimumCellY, MaxY=d.maximumCellY });
+                    MinRadius=d.minimumRadiusInCells, MaxRadius=d.maximumRadiusInCells, MinY=minY, MaxY=maxY });
+            }
         return result.ToArray();
     }
 

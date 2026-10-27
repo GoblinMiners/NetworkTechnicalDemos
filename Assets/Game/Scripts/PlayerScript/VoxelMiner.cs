@@ -17,6 +17,7 @@ public class VoxelMiner : NetworkBehaviour
     private float _mineTimer;
     private void Update()
     {
+        if (GobminePlayerEquipment.LocalMenuOpen) return;
         if(!isLocalPlayer || World.Instance==null || !World.Instance.CanMine || cameraPivot==null)return;
         bool held=false;
 #if ENABLE_INPUT_SYSTEM

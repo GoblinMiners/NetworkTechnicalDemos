@@ -39,6 +39,24 @@ public class PlayerInventory : NetworkBehaviour
             TargetCollected(connectionToClient,itemId,(int)Math.Min(int.MaxValue,wholeAdded));
         return true;
     }
+    [Server]
+    public bool ServerTrySpend(GobmineExpeditionSettings.Cost[] costs)
+    {
+        if (costs == null) return false;
+        var totals = new Dictionary<int, double>();
+        foreach (var c in costs)
+        {
+            if (c.itemId <= 0 || c.amount <= 0 || FindItem(c.itemId) == null) return false;
+            double previous; totals.TryGetValue(c.itemId, out previous); totals[c.itemId] = previous + c.amount;
+        }
+        foreach (var c in totals) if (GetQuantity(c.Key) < c.Value) return false;
+        foreach (var c in totals)
+        {
+            double left = GetQuantity(c.Key) - c.Value;
+            if (left <= 0d) Quantities.Remove(c.Key); else Quantities[c.Key] = left;
+        }
+        return true;
+    }
     [TargetRpc]
     private void TargetCollected(NetworkConnectionToClient target,int id,int amount)
     {

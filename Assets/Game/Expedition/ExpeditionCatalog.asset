@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf69f6009c1552b8b3dc6d147cc0045f, type: 3}
+  m_Name: ExpeditionCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::TerrainMaterialCatalog
+  baseStoneId: 1
+  definitions:
+  - {fileID: 11400000, guid: d28c89b3a8c622346a141758af5f4ea4, type: 2}
+  - {fileID: 11400000, guid: 2712909c110912a48a4325d920951d75, type: 2}
+  - {fileID: 11400000, guid: ff7807b7c088d434b8ccd9d36f32b482, type: 2}
+  - {fileID: 11400000, guid: c6fc1aa8ebce213409f00a8c20b740f4, type: 2}
+  - {fileID: 11400000, guid: e2101e72778afdd4b8981aecaea5ad17, type: 2}
+  - {fileID: 11400000, guid: 2c8430cc183a812418d63f2e08518edc, type: 2}

@@ -123,6 +123,7 @@ public partial class World : NetworkBehaviour
         public int Cursor;
         public bool IsCollapse;
         public PlayerInventory Miner;
+        public TerrainShapeRecord Shape;
     }
     // Reliable, revisioned late-join synchronization. Live deltas are retained while
     // a frozen baseline is streamed, then replayed after that baseline.
@@ -199,6 +200,7 @@ public partial class World : NetworkBehaviour
 
     private void ResetRuntimeState()
     {
+        ResetExpeditionRuntime();
         ResetMaterialRuntime();
         StopAllCoroutines();
         _chunkRoutine = null;
@@ -208,7 +210,7 @@ public partial class World : NetworkBehaviour
         _activeChunks.Clear(); _sleepingChunks.Clear();
         _chunksToGenerate.Clear(); _generationQueued.Clear(); _dirtyMeshes.Clear(); _dirtyMeshOrder.Clear();
         _structuralChanges.Clear(); _collapseQueue.Clear(); _edits.Clear();
-        ResetRubbleRuntime(); ResetCaveInRuntime(); _bufferedDeltas.Clear();
+        ResetRubbleRuntime(); ResetCaveInRuntime(); ResetFallingShapes(); _bufferedDeltas.Clear();
         _syncingConnections.Clear();
         _miningWork = null; _collapseWork = null; _solver = null; _terrain = null; _densityReader = null;
         _singleSampleCollapseTurn = false;
@@ -236,6 +238,7 @@ public partial class World : NetworkBehaviour
     private void Update()
     {
         if (_terrain == null) return;
+        UpdateExpeditionRuntime();
         if (isServer && IsReady)
         {
             // Accepted edits and cascades finish even if the game leaves Exploring.
@@ -245,11 +248,13 @@ public partial class World : NetworkBehaviour
             EmitCollapseEffects();
         }
         using (MeshMarker.Auto()) FlushDirtyMeshes();
+        UpdateFallingShapes();
         // Each rubble bucket waits only for its OWN collision views, not for every
         // dirty chunk in a busy multiplayer world. Distant buckets cannot block it.
         if (isServer)
         {
-            UpdateCollapseDamage();
+            // Legacy visual-only mode explicitly opts back into falling-column damage.
+            if (!preserveDisconnectedShapes) UpdateCollapseDamage();
             using (DebrisMarker.Auto()) FlushDebris();
             using (ResourcesMarker.Auto()) UpdateMaterialWorld();
         }
@@ -299,6 +304,9 @@ public partial class World : NetworkBehaviour
                     Vector3Int p = new Vector3Int(x, y, z);
                     float old = _terrain.Get(p);
                     if (old >= 0f) continue; // Hitting empty air cannot mint more debris.
+                    string equipmentReason;
+                    if (!CanMineExpeditionSample(p, edit.Miner, out equipmentReason))
+                    { NotifyEquipmentMessage(edit.Miner, equipmentReason); continue; }
                     float distance = Vector3.Distance((Vector3)p * voxelSize, edit.Point);
                     if (distance >= edit.Radius) continue;
                     float value = Mathf.Min(1f, old + (edit.Amount / HardnessAtSample(p)) * (1f - distance / edit.Radius));
@@ -358,7 +366,8 @@ public partial class World : NetworkBehaviour
                 {
                     Queue<List<Vector3Int>> queue = ceiling ? _ceilingQueue : _collapseQueue;
                     if (queue.Count == 0) break;
-                    work = new RemovalWork { CollapseSamples = queue.Dequeue(), IsCollapse = true };
+                    work = new RemovalWork { CollapseSamples = ceiling ? GatherCeilingChunkSamples(queue) : queue.Dequeue(), IsCollapse = true };
+                    work.Shape = CaptureDetachedShape(work.CollapseSamples, ceiling);
                 }
                 else
                 {
@@ -376,7 +385,11 @@ public partial class World : NetworkBehaviour
                 used += count;
                 committed = true;
             }
-            if (work.Cursor >= work.Count) work = null;
+            if (work.Cursor >= work.Count)
+            {
+                if (collapse) QueueShapeAfterRemoval(work.Shape);
+                work = null;
+            }
         }
         return used;
     }
@@ -404,6 +417,11 @@ public partial class World : NetworkBehaviour
                 : work.Changes[work.Cursor];
             if (work.IsCollapse && _terrain.Get(change.Position) >= 0f) continue;
             if (change.Value <= _terrain.Get(change.Position)) continue;
+            if (!work.IsCollapse && work.Miner != null)
+            {
+                string reason;
+                if (!CanMineExpeditionSample(change.Position, work.Miner, out reason)) continue;
+            }
             changes.Add(change);
             for (int x = 0; x <= 1; x++)
                 for (int y = 0; y <= 1; y++)
@@ -422,6 +440,7 @@ public partial class World : NetworkBehaviour
             Vector3Int p = changes[i].Position;
             float old = _terrain.Get(p);
             _terrain.Set(p, changes[i].Value);
+            NotifyFluidTerrainChange(p);
             positions[i] = p; values[i] = changes[i].Value;
             // Fractional weakening cannot disconnect the solid-sample graph.
             // It CAN make a roof thin, so the independent roof scanner still sees it.
@@ -551,6 +570,7 @@ public partial class World : NetworkBehaviour
         for (int i = 0; i < delta.Positions.Length; i++)
         {
             _terrain.Set(delta.Positions[i], delta.Values[i]);
+            NotifyFluidTerrainChange(delta.Positions[i]);
             MarkSampleDirty(delta.Positions[i]);
         }
         _lastClientRevision = delta.Revision;
@@ -581,7 +601,9 @@ public partial class World : NetworkBehaviour
     {
         long revision = _revision;
         var snapshot = _terrain.CopyOverrides(); // A value copy, never live mutable arrays.
-        TargetBeginTerrainSnapshot(target, revision, chunkSize, voxelSize, maxYChunk, seed, _worldRulesSignature);
+        var fluidSnapshot = _fluids == null ? new List<GobmineFluidPoint>() : _fluids.CopyOverrides();
+        long fluidRevision = _fluidRevision;
+        TargetBeginTerrainSnapshot(target, revision, chunkSize, voxelSize, maxYChunk, seed, _worldRulesSignature, fluidRevision);
         const int batchSize = 128; // Keep individual reliable RPCs modest in size.
         for (int offset = 0; offset < snapshot.Length; offset += batchSize)
         {
@@ -593,25 +615,39 @@ public partial class World : NetworkBehaviour
             TargetTerrainSnapshotPart(target, positions, values);
             yield return null;
         }
+        for (int offset = 0; offset < fluidSnapshot.Count; offset += batchSize)
+        {
+            if (!NetworkServer.connections.ContainsKey(target.connectionId)) break;
+            int count = Math.Min(batchSize, fluidSnapshot.Count-offset);
+            TargetFluidSnapshotPart(target, fluidSnapshot.GetRange(offset, count).ToArray());
+            yield return null;
+        }
+        if (NetworkServer.connections.ContainsKey(target.connectionId))
+        {
+            IEnumerator shapeSnapshot = SendShapesForLateJoin(target);
+            while (shapeSnapshot.MoveNext()) yield return shapeSnapshot.Current;
+        }
         _syncingConnections.Remove(target.connectionId);
         if (NetworkServer.connections.ContainsKey(target.connectionId)) TargetEndTerrainSnapshot(target);
     }
 
     [TargetRpc]
-    private void TargetBeginTerrainSnapshot(NetworkConnectionToClient target, long revision, Vector3Int size, float spacing, int topChunk, int worldSeed, string rulesSignature)
+    private void TargetBeginTerrainSnapshot(NetworkConnectionToClient target, long revision, Vector3Int size, float spacing, int topChunk, int worldSeed, string rulesSignature, long fluidRevision)
     {
         if (isServer) return;
         _receivingSnapshot = true;
         IsReady = false;
+        chunkSize = size; voxelSize = spacing; maxYChunk = topChunk;
         try { InitializeClientMaterials(worldSeed, rulesSignature); }
         catch (Exception ex)
         {
             _terrain = null; _densityReader = null; IsReady = false;
             Debug.LogError("[Gobmine Materials] " + ex.Message); NetworkClient.Disconnect(); return;
         }
-        chunkSize = size; voxelSize = spacing; maxYChunk = topChunk;
-        _terrain = new TerrainDensityStore(chunkSize, voxelSize);
+        _terrain = new TerrainDensityStore(chunkSize, voxelSize, _caverns);
         _densityReader = _terrain.Get;
+        InitializeExpeditionFluids();
+        _lastFluidClientRevision = fluidRevision;
         _snapshotRevision = revision;
         foreach (var entry in _activeChunks) entry.Value.gameObject.SetActive(false);
     }
@@ -627,6 +663,11 @@ public partial class World : NetworkBehaviour
     private void TargetEndTerrainSnapshot(NetworkConnectionToClient target)
     {
         if (isServer || _terrain == null) return;
+        if (!FinishFluidSnapshot())
+        {
+            _receivingSnapshot = false; _snapshotRequested = false;
+            RequestSnapshot(); return;
+        }
         _lastClientRevision = _snapshotRevision;
         _bufferedDeltas.Sort((a, b) => a.Revision.CompareTo(b.Revision));
         bool missingRevision = false;

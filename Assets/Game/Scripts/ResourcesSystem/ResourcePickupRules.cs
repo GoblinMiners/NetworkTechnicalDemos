@@ -3,7 +3,7 @@ using UnityEngine;
 
 public enum ResourcePickupAccess
 {
-    Reachable, Invalid, TooFar, PlayerDown, TerrainUpdating, BuriedInTerrain, SolidObstacle
+    Reachable, Invalid, TooFar, PlayerDown, TerrainUpdating, BuriedInTerrain, SolidObstacle, NeedsEquipment
 }
 
 /// <summary>
@@ -38,6 +38,7 @@ public static class ResourcePickupRules
         // Test the hierarchy, not the object's name or layer. Child rubble colliders
         // and an OrePickup's own non-trigger BoxCollider must also be ignored.
         return collider.GetComponentInParent<DebrisCleanup>() == null &&
+               collider.GetComponentInParent<TerrainShapeChunk>() == null &&
                collider.GetComponentInParent<OrePickup>() == null &&
                collider.GetComponentInParent<PlayerInventory>() == null;
     }

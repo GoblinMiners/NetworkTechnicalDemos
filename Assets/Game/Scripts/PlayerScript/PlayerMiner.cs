@@ -25,6 +25,7 @@ public class PlayerMiner : NetworkBehaviour
     }
     private void Update()
     {
+        if (GobminePlayerEquipment.LocalMenuOpen) return;
         if(!isLocalPlayer || cameraPivot==null || World.Instance==null || !World.Instance.CanMine)return;
         if(!_isMining){_timer=0;return;}
         float interval=Mathf.Max(0.03f,mineInterval);_timer+=Time.deltaTime;

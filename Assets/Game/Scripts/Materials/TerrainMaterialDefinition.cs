@@ -17,9 +17,18 @@ public sealed class TerrainMaterialDefinition : ScriptableObject
     [Header("Ore generation (ignored for the catalogue's base stone)")]
     public bool generateDeposits;
     [Min(4)] public int depositGridSizeInCells = 48;
-    [Range(0,1000)] public int depositChancePerThousand = 500;
+    [UnityEngine.Range(0,1000)] public int depositChancePerThousand = 500;
     [Min(1)] public int minimumRadiusInCells = 3;
     [Min(1)] public int maximumRadiusInCells = 8;
     public int minimumCellY = -100000;
     public int maximumCellY = 100000;
+
+    [Header("Expedition progression (optional)")]
+    public bool useDepthBand;
+    [Min(0f)] public float minimumDepthMetres;
+    [Min(0f)] public float maximumDepthMetres = 100000f;
+    [UnityEngine.Range(0,4)] public int requiredToolTier;
+    [Min(0f)] public float radiationRate;
+    public bool requireRadiationSuit;
+    public bool requireShieldedContainer;
 }

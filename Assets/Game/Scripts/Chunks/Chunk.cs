@@ -59,5 +59,6 @@ public class Chunk : MonoBehaviour
         _mesh.RecalculateNormals();_mesh.RecalculateBounds();_meshFilter.sharedMesh=_mesh;
         if(_triangleMaterials.Count>0)_meshCollider.sharedMesh=_mesh;
         _hasBuiltMesh = true;
+        if (world != null) world.RefreshRadiationSurface(_globalOrigin, data);
     }
 }

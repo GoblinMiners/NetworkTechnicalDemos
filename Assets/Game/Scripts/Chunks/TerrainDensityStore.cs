@@ -11,6 +11,8 @@ public sealed class TerrainDensityStore
 {
     public readonly Vector3Int ChunkSize;
     public readonly float VoxelSize;
+    private readonly GobmineCavernGenerator _caverns;
+    private readonly Dictionary<Vector2Int, Vector2Int> _airYExtents = new Dictionary<Vector2Int, Vector2Int>();
     // Base rock noise depends on X/Z only. Cache it instead of recomputing Perlin
     // for every Y, volume corner, structural query and chunk rebuild.
     private readonly Dictionary<Vector2Int, float> _baseRockColumns = new Dictionary<Vector2Int, float>();
@@ -20,12 +22,12 @@ public sealed class TerrainDensityStore
     private readonly HashSet<Vector3Int> _modifiedChunks = new HashSet<Vector3Int>();
     private readonly Dictionary<Vector3Int, Vector2Int> _airXExtents = new Dictionary<Vector3Int, Vector2Int>();
 
-    public TerrainDensityStore(Vector3Int chunkSize, float voxelSize)
+    public TerrainDensityStore(Vector3Int chunkSize, float voxelSize, GobmineCavernGenerator caverns = null)
     {
         if (chunkSize.x < 1 || chunkSize.y < 1 || chunkSize.z < 1 || voxelSize <= 0f)
             throw new ArgumentOutOfRangeException("Terrain dimensions must be positive.");
         ChunkSize = chunkSize;
-        VoxelSize = voxelSize;
+        VoxelSize = voxelSize; _caverns = caverns;
     }
 
     public static int FloorDiv(int value, int divisor)
@@ -44,11 +46,11 @@ public sealed class TerrainDensityStore
         if (room) return 5f;
         Vector2Int key = new Vector2Int(p.x, p.z);
         float rock;
-        if (_baseRockColumns.TryGetValue(key, out rock)) return rock;
+        if (_baseRockColumns.TryGetValue(key, out rock)) return _caverns == null ? rock : _caverns.ModifyDensity(p, rock);
         rock = -5f - Mathf.PerlinNoise(w.x * 0.1f, w.z * 0.1f) * 2f;
         if (_baseRockColumns.Count >= BaseRockCacheCapacity) _baseRockColumns.Remove(_baseRockOrder.Dequeue());
         _baseRockColumns.Add(key, rock); _baseRockOrder.Enqueue(key);
-        return rock;
+        return _caverns == null ? rock : _caverns.ModifyDensity(p, rock);
     }
 
     public float Get(Vector3Int p)
@@ -70,6 +72,10 @@ public sealed class TerrainDensityStore
             if (_airXExtents.TryGetValue(row, out range))
                 _airXExtents[row] = new Vector2Int(Math.Min(range.x, p.x), Math.Max(range.y, p.x));
             else _airXExtents[row] = new Vector2Int(p.x, p.x);
+            Vector2Int column = new Vector2Int(p.x, p.z);
+            if (_airYExtents.TryGetValue(column, out range))
+                _airYExtents[column] = new Vector2Int(Math.Min(range.x, p.y), Math.Max(range.y, p.y));
+            else _airYExtents[column] = new Vector2Int(p.y, p.y);
         }
         return true;
     }
@@ -77,12 +83,27 @@ public sealed class TerrainDensityStore
     /// <summary>
     /// A proof of connection to the infinite rock mass, not a search-size shortcut.
     /// Outside all air on this X row there is an unbroken solid ray to infinity.
-    /// Valid for THIS solid-rock-minus-room, removal-only generator. A future cave
-    /// generator/building tool MUST supply a different support proof.
+    /// With expeditions enabled, first proves a solid route to the cave generator's
+    /// scaffold seam. Excavations invalidate routes conservatively. Terrain addition
+    /// and other cave generators still require a different proof.
     /// </summary>
     public bool HasSolidRayToInfinity(Vector3Int p)
     {
         if (Get(p) >= 0f) return false;
+        if (_caverns != null)
+        {
+            // The generated ellipsoid is convex. Moving away from its centre along
+            // Y stays in base rock up to a guaranteed solid macrocell seam. Reject
+            // the certificate if ANY excavation/room intersects this route.
+            Vector3Int end = _caverns.SupportEndpoint(p);
+            int lo = Math.Min(p.y, end.y), hi = Math.Max(p.y, end.y);
+            Vector2Int edits;
+            if (_airYExtents.TryGetValue(new Vector2Int(p.x, p.z), out edits) && edits.x <= hi && edits.y >= lo) return false;
+            float routeX = p.x * VoxelSize, routeZ = p.z * VoxelSize;
+            if (routeX >= -12f && routeX <= 12f && routeZ >= -12f && routeZ <= 12f && lo * VoxelSize <= 8f && hi * VoxelSize >= -4f) return false;
+            if (Get(end) >= 0f) return false;
+            p = end; // Base generator guarantees the complete X ray on this seam.
+        }
         Vector2Int range;
         bool anyAir = _airXExtents.TryGetValue(new Vector3Int(0, p.y, p.z), out range);
         float y = p.y * VoxelSize, z = p.z * VoxelSize;

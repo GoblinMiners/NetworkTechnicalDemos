@@ -17,6 +17,27 @@ public sealed class ResourcePileStore
     private readonly Dictionary<Key,long> _buckets = new Dictionary<Key,long>();
     private readonly Dictionary<long,Key> _originalBuckets = new Dictionary<long,Key>();
     private long _nextId=1;
+    private readonly Dictionary<Vector3Int, HashSet<long>> _spatial = new Dictionary<Vector3Int, HashSet<long>>();
+    private static Vector3Int SpatialCell(Vector3 p) => Vector3Int.FloorToInt(p/4f);
+    private void Index(Pile p)
+    {
+        Vector3Int c=SpatialCell(p.Position);HashSet<long> ids;
+        if(!_spatial.TryGetValue(c,out ids)){ids=new HashSet<long>();_spatial[c]=ids;}ids.Add(p.Id);
+    }
+    private void Unindex(Pile p)
+    {
+        Vector3Int c=SpatialCell(p.Position);HashSet<long> ids;
+        if(_spatial.TryGetValue(c,out ids)){ids.Remove(p.Id);if(ids.Count==0)_spatial.Remove(c);}
+    }
+    public IEnumerable<Pile> Nearby(Vector3 position,float radius)
+    {
+        Vector3Int lo=SpatialCell(position-Vector3.one*radius),hi=SpatialCell(position+Vector3.one*radius);
+        for(int x=lo.x;x<=hi.x;x++)for(int y=lo.y;y<=hi.y;y++)for(int z=lo.z;z<=hi.z;z++)
+        {
+            HashSet<long> ids;if(!_spatial.TryGetValue(new Vector3Int(x,y,z),out ids))continue;
+            foreach(long id in ids){Pile p;if(_piles.TryGetValue(id,out p) && (p.Position-position).sqrMagnitude<=radius*radius)yield return p;}
+        }
+    }
     private struct Key : IEquatable<Key>
     {
         public Vector3Int Cell; public int Material,Item;
@@ -44,19 +65,20 @@ public sealed class ResourcePileStore
         }
         id=_nextId++;
         p=new Pile { Id=id,MaterialId=material,ItemId=item,Units=units,Position=position };
-        _piles.Add(id,p); _buckets[key]=id; _originalBuckets[id]=key; return id;
+        _piles.Add(id,p); _buckets[key]=id; _originalBuckets[id]=key; Index(p); return id;
     }
     private static bool Finite(float f) => !float.IsNaN(f)&&!float.IsInfinity(f);
     public bool Remove(long id,out Pile pile)
     {
         if (!_piles.TryGetValue(id,out pile)) return false;
-        _piles.Remove(id); _buckets.Remove(_originalBuckets[id]); _originalBuckets.Remove(id); return true;
+        Unindex(pile); _piles.Remove(id); _buckets.Remove(_originalBuckets[id]); _originalBuckets.Remove(id); return true;
     }
     public bool UpdatePosition(long id,Vector3 position)
     {
         Pile p;
         if(!Finite(position.x)||!Finite(position.y)||!Finite(position.z)||!_piles.TryGetValue(id,out p))return false;
-        p.Position=position;_piles[id]=p;return true;
+        bool moved=SpatialCell(p.Position)!=SpatialCell(position);if(moved)Unindex(p);
+        p.Position=position;_piles[id]=p;if(moved)Index(p);return true;
     }
     public List<Pile> Copy() => new List<Pile>(_piles.Values);
     public void Import(IEnumerable<Pile> records)

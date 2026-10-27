@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 847bf611698b5079b3fd4d479e6a6253, type: 3}
+  m_Name: SilverOre_Expedition
+  m_EditorClassIdentifier: Assembly-CSharp::TerrainMaterialDefinition
+  materialId: 3
+  displayName: Silver Ore
+  surfaceMaterial: {fileID: 2100000, guid: 15f29d97a5c4523bbc2c16f94d611034, type: 2}
+  debrisMaterial: {fileID: 2100000, guid: 66c3e8f079c751d7bf51f72a71d60ee9, type: 2}
+  hardness: 1.65
+  inventoryItem: {fileID: 11400000, guid: 2ad6f1b284fd5a49889cd12d366c9bd9, type: 2}
+  itemsPerCubicMetre: 24
+  generateDeposits: 1
+  depositGridSizeInCells: 48
+  depositChancePerThousand: 550
+  minimumRadiusInCells: 4
+  maximumRadiusInCells: 9
+  minimumCellY: -10000000
+  maximumCellY: 10000000
+  useDepthBand: 1
+  minimumDepthMetres: 20
+  maximumDepthMetres: 100000
+  requiredToolTier: 1
+  radiationRate: 0
+  requireRadiationSuit: 0
+  requireShieldedContainer: 0
